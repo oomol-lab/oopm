@@ -1,0 +1,61 @@
+{
+  "name": "oopm",
+  "version": "0.1.0",
+  "description": "OOMOL Package Manager",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "oopm": "dist/bin.js"
+  },
+  "publishConfig": {
+    "main": "dist/index.js",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.ts"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup-node",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "ts-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
+  },
+  "keywords": [],
+  "author": "Kevin Cui <bh@bugs.cc>",
+  "license": "MIT",
+  "devDependencies": {
+    "@antfu/eslint-config": "^3.8.0",
+    "@types/node": "^22.8.1",
+    "@vitest/coverage-v8": "^2.1.3",
+    "@vitest/ui": "^2.1.3",
+    "eslint": "^9.13.0",
+    "fastify": "^5.0.0",
+    "get-port": "^7.1.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  },
+  "packageManager": "pnpm@9.11.0",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "execa": "^9.5.0",
+    "fast-glob": "^3.3.2",
+    "tar": "^7.4.3",
+    "yaml": "^2.6.0"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "prepack_ignore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "npm@10.9.0",
+  "dependencies": {
+    "to-space-case": "^1.0.0"
+  }
+}

@@ -35,7 +35,14 @@
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage"
   },
-  "keywords": [],
+  "files": [
+    "src",
+    "dist"
+  ],
+  "keywords": [
+    "oomol",
+    "package manager"
+  ],
   "author": "Kevin Cui <bh@bugs.cc>",
   "license": "MIT",
   "devDependencies": {

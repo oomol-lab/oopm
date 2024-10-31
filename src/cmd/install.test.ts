@@ -27,9 +27,14 @@ describe.sequential("install file", () => {
         const folderName = "install_file_tar-0.0.1";
         const tgz = path.join(p, `${folderName}.tgz`);
 
-        await install({
+        const result = await install({
             file: tgz,
             distDir: ctx.workdir,
+        });
+
+        expect(result).toEqual({
+            target: path.join(ctx.workdir, folderName),
+            meta: await generatePackageJson(path.join(ctx.workdir, folderName), false),
         });
 
         expect(await exists(path.join(ctx.workdir, folderName, ooPackageName))).toBe(true);
@@ -56,12 +61,18 @@ describe.sequential("install file", () => {
     it("should success with dir", async (ctx) => {
         const p = fixture("install_file_dir");
 
-        await install({
+        const result = await install({
             file: p,
             distDir: ctx.workdir,
         });
 
         const folderName = "install_file_dir-0.0.1";
+
+        expect(result).toEqual({
+            target: path.join(ctx.workdir, folderName),
+            meta: await generatePackageJson(path.join(ctx.workdir, folderName), false),
+        });
+
         expect(await exists(path.join(ctx.workdir, folderName, ooPackageName))).toBe(true);
 
         const fileList = await fg.glob("**/*", {

@@ -9,3 +9,18 @@ export interface Dep {
 }
 
 export type Deps = Dep[];
+
+export interface InstallFileResult {
+    target: string;
+    meta: Omit<OOPackageSchema, "scripts">;
+};
+
+export interface OOPackageSchema {
+    name: string;
+    version: string;
+    description?: string;
+    keywords?: string[];
+    author?: string;
+    dependencies?: Record<string, string>;
+    scripts: Record<string, string>;
+}

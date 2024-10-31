@@ -67,23 +67,31 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
         const tempDir = await xTar(options.file);
         const meta = await generatePackageJson(tempDir, false);
         const targetDir = path.join(options.distDir, `${meta.name}-${meta.version}`);
-        await remove(targetDir);
+        const isExists = await exists(targetDir);
+        if (isExists) {
+            await remove(targetDir);
+        }
         await mkdir(path.dirname(targetDir));
         await move(tempDir, targetDir);
         return {
             target: targetDir,
             meta,
+            isOverwrite: isExists,
         };
     }
 
     const meta = await generatePackageJson(options.file, false);
     const targetDir = path.join(options.distDir, `${meta.name}-${meta.version}`);
-    await remove(targetDir);
+    const isExists = await exists(targetDir);
+    if (isExists) {
+        await remove(targetDir);
+    }
     await mkdir(path.dirname(targetDir));
     await copyDir(options.file, targetDir);
     return {
         target: targetDir,
         meta,
+        isOverwrite: isExists,
     };
 }
 

@@ -1,4 +1,4 @@
-import type { Dep, DepRaw, Deps } from "../types";
+import type { Dep, DepRaw, Deps, InstallFileResult } from "../types";
 import path from "node:path";
 import { execa } from "execa";
 import { ooPackageName } from "../const";
@@ -35,7 +35,9 @@ export interface InstallPackageOptions extends InstallBasicOptions {
 
 export type InstallOptions = InstallAllOptions | InstallFileOptions | InstallPackageOptions;
 
-export async function install(options: InstallOptions) {
+export async function install(options: InstallAllOptions | InstallPackageOptions): Promise<void>;
+export async function install(options: InstallFileOptions): Promise<InstallFileResult>;
+export async function install(options: InstallOptions): Promise<InstallFileResult | void> {
     if ("file" in options) {
         return await installFile(options);
     }
@@ -54,7 +56,7 @@ export async function install(options: InstallOptions) {
 // oopm install ../../foo.tgz
 // oopm install ../../bar/
 // In this scenario, we do not handle any dependencies (no dependencies installed).
-export async function installFile(options: InstallFileOptions) {
+export async function installFile(options: InstallFileOptions): Promise<InstallFileResult> {
     if (!await exists(options.file)) {
         throw new Error(`File not found: ${options.file}`);
     }
@@ -68,7 +70,10 @@ export async function installFile(options: InstallFileOptions) {
         await remove(targetDir);
         await mkdir(path.dirname(targetDir));
         await move(tempDir, targetDir);
-        return;
+        return {
+            target: targetDir,
+            meta,
+        };
     }
 
     const meta = await generatePackageJson(options.file, false);
@@ -76,6 +81,10 @@ export async function installFile(options: InstallFileOptions) {
     await remove(targetDir);
     await mkdir(path.dirname(targetDir));
     await copyDir(options.file, targetDir);
+    return {
+        target: targetDir,
+        meta,
+    };
 }
 
 // oopm install foo

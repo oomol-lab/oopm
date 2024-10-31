@@ -1,20 +1,10 @@
-import type { Deps } from "../types";
+import type { Deps, OOPackageSchema } from "../types";
 import path from "node:path";
 import fg from "fast-glob";
 import YAML from "yaml";
 import { ooPackageName } from "../const";
 import { exists, readFile, writeFile } from "./fs";
 import { env, nerfURL } from "./misc";
-
-interface OOPackageSchema {
-    name: string;
-    version: string;
-    description?: string;
-    keywords?: string[];
-    author?: string;
-    dependencies?: Record<string, string>;
-    scripts: Record<string, string>;
-}
 
 export async function generatePackageJson(dir: string, stringify: true): Promise<string>;
 export async function generatePackageJson(dir: string): Promise<string>;

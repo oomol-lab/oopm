@@ -28,7 +28,7 @@ program.command("install")
     .description("Install a package")
     .argument("[pkg...]", "The name of the pkg to be installed or the local address.", "")
     .requiredOption("-d --dist-dir <distDir>", "The dist directory")
-    .action(async (pkgs, options) => {
+    .action(async (pkgs, options): Promise<any> => {
         if (pkgs.length === 0) {
             return await install({
                 all: true,
@@ -40,7 +40,6 @@ program.command("install")
         if (pkgs.length === 1 && pkgs[0].startsWith(".")) {
             return await install({
                 file: pkgs[0],
-                workdir: process.cwd(),
                 distDir: options.distDir,
             });
         }

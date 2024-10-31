@@ -13,6 +13,7 @@ export type Deps = Dep[];
 export interface InstallFileResult {
     target: string;
     meta: Omit<OOPackageSchema, "scripts">;
+    isOverwrite: boolean;
 };
 
 export interface OOPackageSchema {

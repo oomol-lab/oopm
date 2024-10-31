@@ -35,6 +35,7 @@ describe.sequential("install file", () => {
         expect(result).toEqual({
             target: path.join(ctx.workdir, folderName),
             meta: await generatePackageJson(path.join(ctx.workdir, folderName), false),
+            isOverwrite: false,
         });
 
         expect(await exists(path.join(ctx.workdir, folderName, ooPackageName))).toBe(true);
@@ -49,6 +50,19 @@ describe.sequential("install file", () => {
             "package.oo.yaml",
             "src/index.ts",
         ]));
+
+        {
+            const result = await install({
+                file: tgz,
+                distDir: ctx.workdir,
+            });
+
+            expect(result).toEqual({
+                target: path.join(ctx.workdir, folderName),
+                meta: await generatePackageJson(path.join(ctx.workdir, folderName), false),
+                isOverwrite: true,
+            });
+        }
     });
 
     it("should failed with not exists tar", async (ctx) => {
@@ -71,6 +85,7 @@ describe.sequential("install file", () => {
         expect(result).toEqual({
             target: path.join(ctx.workdir, folderName),
             meta: await generatePackageJson(path.join(ctx.workdir, folderName), false),
+            isOverwrite: false,
         });
 
         expect(await exists(path.join(ctx.workdir, folderName, ooPackageName))).toBe(true);
@@ -84,6 +99,19 @@ describe.sequential("install file", () => {
         expect(new Set(fileList)).toEqual(new Set([
             "package.oo.yaml",
         ]));
+
+        {
+            const result = await install({
+                file: p,
+                distDir: ctx.workdir,
+            });
+
+            expect(result).toEqual({
+                target: path.join(ctx.workdir, folderName),
+                meta: await generatePackageJson(path.join(ctx.workdir, folderName), false),
+                isOverwrite: true,
+            });
+        }
     });
 });
 

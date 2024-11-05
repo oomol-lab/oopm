@@ -144,11 +144,56 @@ describe.sequential("install all", () => {
         // Copy `entry` to workdir
         await copyDir(path.join(p, "entry"), ctx.workdir);
 
-        await install({
+        const result = await install({
             all: true,
             token: "fake-token",
             workdir: ctx.workdir,
             distDir,
+        });
+
+        expect(result.deps).toStrictEqual({
+            "a-0.0.1": {
+                name: "a",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "b-0.0.1": {
+                name: "b",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "c-0.0.1": {
+                name: "c",
+                version: "0.0.1",
+                isAlreadyExist: true,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "c-0.0.2": {
+                name: "c",
+                version: "0.0.2",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "d-0.0.1": {
+                name: "d",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "e-0.0.1": {
+                name: "e",
+                version: "0.0.1",
+                isAlreadyExist: true,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
         });
 
         const fileList = await fg.glob(`**/${ooPackageName}`, {
@@ -194,7 +239,7 @@ describe.sequential("install deps", () => {
         // Copy `entry` to workdir
         await copyDir(path.join(p, "entry"), ctx.workdir);
 
-        await install({
+        const result = await install({
             deps: [
                 { name: "a" },
                 { name: "b" },
@@ -204,6 +249,37 @@ describe.sequential("install deps", () => {
             token: "fake-token",
             workdir: ctx.workdir,
             distDir,
+        });
+
+        expect(result.deps).toStrictEqual({
+            "a-0.0.2": {
+                name: "a",
+                version: "0.0.2",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "b-0.0.2": {
+                name: "b",
+                version: "0.0.2",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "c-0.0.1": {
+                name: "c",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "d-0.0.1": {
+                name: "d",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
         });
 
         const deps = (await generatePackageJson(ctx.workdir, false)).dependencies;

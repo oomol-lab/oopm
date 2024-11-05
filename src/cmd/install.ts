@@ -1,4 +1,4 @@
-import type { Dep, DepRaw, Deps, InstallFileResult } from "../types";
+import type { Dep, DepRaw, Deps, InstallAllResult, InstallFileResult, InstallPackageResult } from "../types";
 import path from "node:path";
 import { execa } from "execa";
 import { ooPackageName } from "../const";
@@ -35,9 +35,10 @@ export interface InstallPackageOptions extends InstallBasicOptions {
 
 export type InstallOptions = InstallAllOptions | InstallFileOptions | InstallPackageOptions;
 
-export async function install(options: InstallAllOptions | InstallPackageOptions): Promise<void>;
+export async function install(options: InstallAllOptions): Promise<InstallAllResult>;
+export async function install(options: InstallPackageOptions): Promise<InstallPackageResult>;
 export async function install(options: InstallFileOptions): Promise<InstallFileResult>;
-export async function install(options: InstallOptions): Promise<InstallFileResult | void> {
+export async function install(options: InstallOptions): Promise<InstallFileResult | InstallPackageResult | InstallAllResult> {
     if ("file" in options) {
         return await installFile(options);
     }
@@ -97,7 +98,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
 
 // oopm install foo
 // oopm install foo@1.0.0
-export async function installPackage(options: InstallPackageOptions) {
+export async function installPackage(options: InstallPackageOptions): Promise<InstallPackageResult> {
     const libraryMeta = await generatePackageJson(options.workdir, false);
 
     const alreadyInstalled: Deps = [];
@@ -144,7 +145,7 @@ export async function installPackage(options: InstallPackageOptions) {
         await Promise.all(p);
     }
 
-    await _install({
+    const deps = await _install({
         alreadyInstalled,
         needInstall,
         save: options.save,
@@ -152,10 +153,14 @@ export async function installPackage(options: InstallPackageOptions) {
         distDir: options.distDir,
         token: options.token,
     });
+
+    return {
+        deps,
+    };
 }
 
 // oopm install
-export async function installAll(options: InstallAllOptions) {
+export async function installAll(options: InstallAllOptions): Promise<InstallAllResult> {
     const libraryMeta = await generatePackageJson(options.workdir, false);
 
     const alreadyInstalled: Deps = [];
@@ -180,7 +185,7 @@ export async function installAll(options: InstallAllOptions) {
         await Promise.all(p);
     }
 
-    await _install({
+    const deps = await _install({
         alreadyInstalled,
         needInstall,
         save: false,
@@ -188,6 +193,10 @@ export async function installAll(options: InstallAllOptions) {
         distDir: options.distDir,
         token: options.token,
     });
+
+    return {
+        deps,
+    };
 }
 
 interface _InstallOptions {
@@ -199,7 +208,7 @@ interface _InstallOptions {
     needInstall: Deps;
 }
 
-async function _install(options: _InstallOptions) {
+async function _install(options: _InstallOptions): Promise<InstallPackageResult["deps"]> {
     const temp = await tempDir();
     await initPackageJson(temp, options.needInstall, options.token);
 
@@ -218,6 +227,20 @@ async function _install(options: _InstallOptions) {
 
     await mkdir(options.distDir);
 
+    const targets: InstallPackageResult["deps"] = {};
+
+    for (const dep of options.alreadyInstalled) {
+        const target = path.join(options.distDir, `${dep.name}-${dep.version}`);
+
+        targets[`${dep.name}-${dep.version}`] = {
+            name: dep.name,
+            version: dep.version,
+            target,
+            isAlreadyExist: true,
+            meta: await generatePackageJson(target, false),
+        };
+    }
+
     const ps = info
         .filter((i) => {
             if (options.alreadyInstalled.length === 0) {
@@ -230,7 +253,17 @@ async function _install(options: _InstallOptions) {
         })
         .map(async (i) => {
             const target = path.join(options.distDir, `${i.name}-${i.version}`);
-            if (!await exists(target)) {
+            const isAlreadyExist = await exists(target);
+
+            targets[`${i.name}-${i.version}`] = {
+                name: i.name,
+                version: i.version,
+                target,
+                isAlreadyExist,
+                meta: await generatePackageJson(i.source, false),
+            };
+
+            if (!isAlreadyExist) {
                 return copyDir(i.source, target);
             }
         });
@@ -242,4 +275,6 @@ async function _install(options: _InstallOptions) {
     await Promise.all(ps);
 
     await remove(temp);
+
+    return targets;
 }

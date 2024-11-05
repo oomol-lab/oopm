@@ -14,7 +14,17 @@ export interface InstallFileResult {
     target: string;
     meta: Omit<OOPackageSchema, "scripts">;
     isOverwrite: boolean;
-};
+}
+
+export interface InstallPackageResult {
+    deps: Record<`${Dep["name"]}-${Dep["version"]}`, Dep & {
+        target: string;
+        meta: Omit<OOPackageSchema, "scripts">;
+        isAlreadyExist: boolean;
+    }>;
+}
+
+export interface InstallAllResult extends InstallPackageResult {}
 
 export interface OOPackageSchema {
     name: string;

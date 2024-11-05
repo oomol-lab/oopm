@@ -110,7 +110,12 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
             let version = dep.version;
 
             if (!version) {
-                version = await findLatestVersion(dep.name, options.token);
+                if (libraryMeta?.dependencies?.[dep.name]) {
+                    version = libraryMeta?.dependencies?.[dep.name] as string;
+                }
+                else {
+                    version = await findLatestVersion(dep.name, options.token);
+                }
             }
 
             const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${version}`, ooPackageName));

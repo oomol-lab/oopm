@@ -252,10 +252,10 @@ describe.sequential("install deps", () => {
         });
 
         expect(result.deps).toStrictEqual({
-            "a-0.0.2": {
+            "a-0.0.1": {
                 name: "a",
-                version: "0.0.2",
-                isAlreadyExist: false,
+                version: "0.0.1",
+                isAlreadyExist: true,
                 target: expect.any(String),
                 meta: expect.any(Object),
             },
@@ -284,7 +284,7 @@ describe.sequential("install deps", () => {
 
         const deps = (await generatePackageJson(ctx.workdir, false)).dependencies;
         expect(deps).toEqual({
-            a: "0.0.2",
+            a: "0.0.1",
             b: "0.0.2",
             c: "0.0.1",
             d: "0.0.1",
@@ -298,7 +298,6 @@ describe.sequential("install deps", () => {
 
         expect(new Set(fileList)).toEqual(new Set([
             "a-0.0.1/package.oo.yaml",
-            "a-0.0.2/package.oo.yaml",
             "b-0.0.2/package.oo.yaml",
             "c-0.0.1/package.oo.yaml",
             "d-0.0.1/package.oo.yaml",

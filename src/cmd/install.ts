@@ -20,6 +20,7 @@ export interface InstallAllOptions extends InstallBasicOptions {
     all: true;
     workdir: string;
     token?: string;
+    registry: string;
 }
 
 export interface InstallFileOptions extends InstallBasicOptions {
@@ -31,6 +32,7 @@ export interface InstallPackageOptions extends InstallBasicOptions {
     deps: DepRaw[];
     token?: string;
     save: boolean;
+    registry: string;
 }
 
 export type InstallOptions = InstallAllOptions | InstallFileOptions | InstallPackageOptions;
@@ -114,7 +116,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
                     version = libraryMeta?.dependencies?.[dep.name] as string;
                 }
                 else {
-                    version = await findLatestVersion(dep.name, options.token);
+                    version = await findLatestVersion(dep.name, options.registry, options.token);
                 }
             }
 
@@ -157,6 +159,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
         workdir: options.workdir,
         distDir: options.distDir,
         token: options.token,
+        registry: options.registry,
     });
 
     return {
@@ -197,6 +200,7 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
         workdir: options.workdir,
         distDir: options.distDir,
         token: options.token,
+        registry: options.registry,
     });
 
     return {
@@ -211,16 +215,17 @@ interface _InstallOptions {
     distDir: string;
     alreadyInstalled: Deps;
     needInstall: Deps;
+    registry: string;
 }
 
 async function _install(options: _InstallOptions): Promise<InstallPackageResult["deps"]> {
     const temp = await tempDir();
-    await initPackageJson(temp, options.needInstall, options.token);
+    await initPackageJson(temp, options.needInstall, options.registry, options.token);
 
     const cmd = execa({
         all: true,
         cwd: temp,
-        env: env(),
+        env: env(options.registry),
     })`npm install`;
 
     for await (const line of cmd) {

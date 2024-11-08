@@ -32,7 +32,7 @@ export async function pack(p: string, outDir: string, ignore: string[] = default
     const cmd = execa({
         all: true,
         cwd: workdir,
-        env: env(),
+        env: env(""),
     })`npm pack --pack-destination ${outDir}`;
 
     for await (const line of cmd) {

@@ -17,7 +17,4 @@ export default defineConfig({
             concurrent: true,
         },
     },
-    define: {
-        __TEST__: "true",
-    },
 });

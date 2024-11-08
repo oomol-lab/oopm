@@ -4,17 +4,15 @@ import { env } from "../utils/misc";
 import { createNpmrc } from "../utils/npm";
 import { defaultIgnore, prePack } from "./pack";
 
-export async function publish(p: string, token?: string) {
+export async function publish(p: string, registry: string, token: string) {
     const workdir = await prePack(p, defaultIgnore);
 
-    if (token) {
-        await createNpmrc(workdir, token);
-    }
+    await createNpmrc(workdir, registry, token);
 
     const cmd = execa({
         all: true,
         cwd: workdir,
-        env: env(),
+        env: env(registry),
     })`npm publish`;
 
     for await (const line of cmd) {

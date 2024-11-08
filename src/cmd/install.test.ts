@@ -12,7 +12,6 @@ import { publish } from "./publish";
 beforeEach(async (ctx) => {
     ctx.workdir = await tempDir();
     ctx.registry = await Registry.create();
-    process.env.CUSTOM_REGISTRY = ctx.registry.endpoint;
 
     return async () => {
         await ctx.registry.close();
@@ -123,11 +122,11 @@ describe.sequential("install all", () => {
         {
             const remoteStorage = path.join(p, "remote_storage");
             await Promise.all([
-                publish(path.join(remoteStorage, "a-0.0.1"), "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.1"), "fake-token"),
-                publish(path.join(remoteStorage, "c-0.0.2"), "fake-token"),
-                publish(path.join(remoteStorage, "d-0.0.1"), "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.1"), "fake-token"),
+                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "c-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
             ]);
         }
 
@@ -149,6 +148,7 @@ describe.sequential("install all", () => {
             token: "fake-token",
             workdir: ctx.workdir,
             distDir,
+            registry: ctx.registry.endpoint,
         });
 
         expect(result.deps).toStrictEqual({
@@ -221,12 +221,12 @@ describe.sequential("install deps", () => {
         {
             const remoteStorage = path.join(p, "remote_storage");
             await Promise.all([
-                publish(path.join(remoteStorage, "a-0.0.2"), "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.1"), "fake-token"),
-                publish(path.join(remoteStorage, "c-0.0.1"), "fake-token"),
-                publish(path.join(remoteStorage, "d-0.0.1"), "fake-token"),
+                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "c-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
             ]);
-            await publish(path.join(remoteStorage, "b-0.0.2"), "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy `local_storage` to distDir
@@ -249,6 +249,7 @@ describe.sequential("install deps", () => {
             token: "fake-token",
             workdir: ctx.workdir,
             distDir,
+            registry: ctx.registry.endpoint,
         });
 
         expect(result.deps).toStrictEqual({

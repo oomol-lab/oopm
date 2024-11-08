@@ -1,13 +1,8 @@
 import { defineConfig } from "tsup";
 
-const define = {
-    __TEST__: "false",
-};
-
 export default defineConfig([
     {
         entry: ["src/index.ts"],
-        define,
         outDir: "dist",
         format: ["cjs", "esm"],
         splitting: false,
@@ -19,7 +14,6 @@ export default defineConfig([
     },
     {
         entry: ["src/bin.ts"],
-        define,
         outDir: "dist",
         format: ["esm"],
         banner: {

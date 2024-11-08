@@ -15,7 +15,7 @@ beforeEach(async (ctx) => {
 describe.sequential("publish", () => {
     it("should success for new package", async (ctx) => {
         const p = fixture("publish_new_success");
-        await expect(publish(p, "fake_token")).resolves.toBeUndefined();
+        await expect(publish(p, ctx.registry.endpoint, "fake_token")).resolves.toBeUndefined();
 
         const data = ctx.registry.getData("publish_success", "0.0.1");
         expect(new Set(await listFilesWithBase64Tar(data))).toEqual(new Set([
@@ -29,12 +29,12 @@ describe.sequential("publish", () => {
     it("should success for update package", async (ctx) => {
         {
             const p = fixture("publish_new_success");
-            await expect(publish(p, "fake_token")).resolves.toBeUndefined();
+            await expect(publish(p, ctx.registry.endpoint, "fake_token")).resolves.toBeUndefined();
         }
 
         {
             const p = fixture("publish_update_success");
-            await expect(publish(p, "fake_token")).resolves.toBeUndefined();
+            await expect(publish(p, ctx.registry.endpoint, "fake_token")).resolves.toBeUndefined();
         }
 
         const data = ctx.registry.getData("publish_success", "0.0.2");

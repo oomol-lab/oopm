@@ -4,7 +4,7 @@ import fg from "fast-glob";
 import YAML from "yaml";
 import { ooPackageName } from "../const";
 import { exists, readFile, writeFile } from "./fs";
-import { env, nerfURL } from "./misc";
+import { nerfURL } from "./misc";
 
 export async function generatePackageJson(dir: string, stringify: true): Promise<string>;
 export async function generatePackageJson(dir: string): Promise<string>;
@@ -56,9 +56,7 @@ export async function updateDependencies(dir: string, deps: Deps) {
     await writeFile(path.join(dir, ooPackageName), content);
 }
 
-export async function findLatestVersion(name: string, token?: string): Promise<string> {
-    const registry = env().npm_config_registry;
-
+export async function findLatestVersion(name: string, registry: string, token?: string): Promise<string> {
     const headers: Record<string, string> = {};
     if (token) {
         headers.Authorization = `Bearer ${token}`;
@@ -77,7 +75,7 @@ export async function findLatestVersion(name: string, token?: string): Promise<s
     return data["dist-tags"].latest;
 }
 
-export async function initPackageJson(dir: string, deps: Deps, token?: string) {
+export async function initPackageJson(dir: string, deps: Deps, registry: string, token?: string) {
     const packageJsonPath = path.join(dir, "package.json");
 
     await writeFile(packageJsonPath, JSON.stringify({
@@ -92,14 +90,14 @@ export async function initPackageJson(dir: string, deps: Deps, token?: string) {
     }, null, 2));
 
     if (token) {
-        await createNpmrc(dir, token);
+        await createNpmrc(dir, registry, token);
     }
 }
 
-export async function createNpmrc(dir: string, token: string) {
+export async function createNpmrc(dir: string, registry: string, token: string) {
     const npmrcPath = path.join(dir, ".npmrc");
 
-    await writeFile(npmrcPath, `${nerfURL(env().npm_config_registry)}:_authToken=${token}`);
+    await writeFile(npmrcPath, `${nerfURL(registry)}:_authToken=${token}`);
 }
 
 export async function transformNodeModules(dir: string) {

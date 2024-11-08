@@ -20,13 +20,16 @@ program.command("pack")
 program.command("publish")
     .description("Publish a package")
     .argument("[dir]", "The package directory", ".")
-    .action(async (dir) => {
-        await publish(dir);
+    .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
+    .requiredOption("-t --token <token>", "The token")
+    .action(async (dir, options) => {
+        await publish(dir, options.registry, options.token);
     });
 
 program.command("install")
     .description("Install a package")
     .argument("[pkg...]", "The name of the pkg to be installed or the local address.", "")
+    .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .requiredOption("-d --dist-dir <distDir>", "The dist directory")
     .action(async (pkgs, options): Promise<any> => {
         if (pkgs.length === 0) {
@@ -34,6 +37,7 @@ program.command("install")
                 all: true,
                 workdir: process.cwd(),
                 distDir: options.distDir,
+                registry: options.registry,
             });
         }
 
@@ -61,6 +65,7 @@ program.command("install")
             save: true,
             workdir: process.cwd(),
             distDir: options.distDir,
+            registry: options.registry,
         });
     });
 

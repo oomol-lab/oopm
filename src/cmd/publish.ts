@@ -1,10 +1,11 @@
 import { execa } from "execa";
 import { remove } from "../utils/fs";
 import { env } from "../utils/misc";
-import { createNpmrc } from "../utils/npm";
+import { createNpmrc, generatePackageJson } from "../utils/npm";
 import { defaultIgnore, prePack } from "./pack";
 
 export async function publish(p: string, registry: string, token: string) {
+    const data = await generatePackageJson(p, false);
     const workdir = await prePack(p, defaultIgnore);
 
     await createNpmrc(workdir, registry, token);
@@ -21,4 +22,6 @@ export async function publish(p: string, registry: string, token: string) {
     }
 
     await remove(workdir).catch(() => {});
+
+    return data;
 }

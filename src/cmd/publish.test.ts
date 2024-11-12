@@ -15,10 +15,11 @@ beforeEach(async (ctx) => {
 describe.sequential("publish", () => {
     it("should success for new package", async (ctx) => {
         const p = fixture("publish_new_success");
-        await expect(publish(p, ctx.registry.endpoint, "fake_token")).resolves.toBeUndefined();
+        const data = await publish(p, ctx.registry.endpoint, "fake_token");
+        expect(data.version).toBe("0.0.1");
 
-        const data = ctx.registry.getData("publish_success", "0.0.1");
-        expect(new Set(await listFilesWithBase64Tar(data))).toEqual(new Set([
+        const data2 = ctx.registry.getData("publish_success", "0.0.1");
+        expect(new Set(await listFilesWithBase64Tar(data2))).toEqual(new Set([
             "package/package.json",
             "package/package/package.json",
             "package/package/src/index.ts",
@@ -29,12 +30,14 @@ describe.sequential("publish", () => {
     it("should success for update package", async (ctx) => {
         {
             const p = fixture("publish_new_success");
-            await expect(publish(p, ctx.registry.endpoint, "fake_token")).resolves.toBeUndefined();
+            const data = await publish(p, ctx.registry.endpoint, "fake_token");
+            expect(data.version).toBe("0.0.1");
         }
 
         {
             const p = fixture("publish_update_success");
-            await expect(publish(p, ctx.registry.endpoint, "fake_token")).resolves.toBeUndefined();
+            const data = await publish(p, ctx.registry.endpoint, "fake_token");
+            expect(data.version).toBe("0.0.2");
         }
 
         const data = ctx.registry.getData("publish_success", "0.0.2");

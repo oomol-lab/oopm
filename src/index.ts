@@ -8,6 +8,7 @@ export type {
     InstallAllOptions,
     InstallBasicOptions,
     InstallFileOptions,
+    InstallOptions,
     InstallPackageOptions,
 } from "./cmd/install";
 export {
@@ -19,5 +20,5 @@ export {
     publish,
 } from "./cmd/publish";
 export { ooPackageName } from "./const";
-export type { Dep, DepRaw, Deps, InstallFileResult } from "./types";
+export type { Dep, DepRaw, Deps, InstallAllResult, InstallFileResult, InstallPackageResult, OOPackageSchema } from "./types";
 export { transformNodeModules } from "./utils/npm";

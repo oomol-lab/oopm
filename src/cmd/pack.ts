@@ -29,16 +29,12 @@ export async function prePack(p: string, ignore: string[]) {
 export async function pack(p: string, outDir: string, ignore: string[] = defaultIgnore) {
     const workdir = await prePack(p, ignore);
 
-    const cmd = execa({
-        all: true,
+    await execa({
         cwd: workdir,
         env: env(""),
+        stdout: "inherit",
+        stderr: "inherit",
     })`npm pack --pack-destination ${outDir}`;
-
-    for await (const line of cmd) {
-        // eslint-disable-next-line no-console
-        console.log(line);
-    }
 
     await remove(workdir).catch(() => {});
 }

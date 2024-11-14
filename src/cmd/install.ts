@@ -223,16 +223,12 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
     const temp = await tempDir();
     await initPackageJson(temp, options.needInstall, options.registry, options.token);
 
-    const cmd = execa({
-        all: true,
+    await execa({
         cwd: temp,
         env: env(options.registry),
+        stdout: "inherit",
+        stderr: "inherit",
     })`npm install`;
-
-    for await (const line of cmd) {
-        // eslint-disable-next-line no-console
-        console.log(line);
-    }
 
     const info = await transformNodeModules(temp);
 

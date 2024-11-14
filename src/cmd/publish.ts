@@ -11,16 +11,12 @@ export async function publish(p: string, registry: string, token: string): Promi
 
     await createNpmrc(workdir, registry, token);
 
-    const cmd = execa({
-        all: true,
+    await execa({
         cwd: workdir,
         env: env(registry),
+        stdout: "inherit",
+        stderr: "inherit",
     })`npm publish`;
-
-    for await (const line of cmd) {
-        // eslint-disable-next-line no-console
-        console.log(line);
-    }
 
     await remove(workdir).catch(() => {});
 

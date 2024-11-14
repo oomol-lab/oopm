@@ -6,6 +6,16 @@ import { ooPackageName } from "../const";
 import { exists, readFile, writeFile } from "./fs";
 import { nerfURL } from "./misc";
 
+export async function getDependencies(dir: string): Promise<Record<string, string>> {
+    const ooPackagePath = path.join(dir, ooPackageName);
+    if (!await exists(path.join(dir, ooPackageName))) {
+        return {};
+    }
+
+    const content = YAML.parse(await readFile(ooPackagePath)) as OOPackageSchema;
+    return content.dependencies ?? {};
+}
+
 export async function generatePackageJson(dir: string, stringify: true): Promise<string>;
 export async function generatePackageJson(dir: string): Promise<string>;
 export async function generatePackageJson(dir: string, stringify: false): Promise<OOPackageSchema>;
@@ -37,23 +47,20 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
 }
 
 export async function updateDependencies(dir: string, deps: Deps) {
-    const meta = await generatePackageJson(dir, false);
-    if (!meta.dependencies) {
-        meta.dependencies = {};
+    const rawContent = await readFile(path.join(dir, ooPackageName));
+    const content = YAML.parse(rawContent) as OOPackageSchema;
+
+    if (!content.dependencies) {
+        content.dependencies = {};
+    }
+    else {
+        for (const dep of deps) {
+            content.dependencies[dep.name] = dep.version;
+        }
     }
 
-    for (const dep of deps) {
-        meta.dependencies[dep.name] = dep.version;
-    }
-
-    if ("scripts" in meta) {
-        // eslint-disable-next-line ts/ban-ts-comment
-        // @ts-expect-error
-        delete meta.scripts;
-    }
-
-    const content = YAML.stringify(meta);
-    await writeFile(path.join(dir, ooPackageName), content);
+    const yamlContent = YAML.stringify(content);
+    await writeFile(path.join(dir, ooPackageName), yamlContent);
 }
 
 export async function findLatestVersion(name: string, registry: string, token?: string): Promise<string> {

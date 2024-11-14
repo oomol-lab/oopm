@@ -7,6 +7,7 @@ import { env } from "../utils/misc";
 import {
     findLatestVersion,
     generatePackageJson,
+    getDependencies,
     initPackageJson,
     transformNodeModules,
     updateDependencies,
@@ -101,7 +102,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
 // oopm install foo
 // oopm install foo@1.0.0
 export async function installPackage(options: InstallPackageOptions): Promise<InstallPackageResult> {
-    const libraryMeta = await generatePackageJson(options.workdir, false);
+    const dependencies = await getDependencies(options.workdir);
 
     const alreadyInstalled: Deps = [];
     const needInstall: Deps = [];
@@ -112,8 +113,8 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
             let version = dep.version;
 
             if (!version) {
-                if (libraryMeta?.dependencies?.[dep.name]) {
-                    version = libraryMeta?.dependencies?.[dep.name] as string;
+                if (dependencies?.[dep.name]) {
+                    version = dependencies?.[dep.name] as string;
                 }
                 else {
                     version = await findLatestVersion(dep.name, options.registry, options.token);
@@ -121,7 +122,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
             }
 
             const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${version}`, ooPackageName));
-            if (existsDisk && libraryMeta?.dependencies?.[dep.name] === version) {
+            if (existsDisk && dependencies?.[dep.name] === version) {
                 alreadyInstalled.push({
                     name: dep.name,
                     version,
@@ -135,11 +136,11 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
             }
         });
 
-        Object.keys(libraryMeta?.dependencies || {}).forEach((key) => {
+        Object.keys(dependencies).forEach((key) => {
             p.push((async (key) => {
                 const dep: Dep = {
                     name: key,
-                    version: libraryMeta.dependencies![key],
+                    version: dependencies![key],
                 };
 
                 const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${dep.version}`, ooPackageName));
@@ -169,16 +170,16 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
 
 // oopm install
 export async function installAll(options: InstallAllOptions): Promise<InstallAllResult> {
-    const libraryMeta = await generatePackageJson(options.workdir, false);
+    const dependencies = await getDependencies(options.workdir);
 
     const alreadyInstalled: Deps = [];
     const needInstall: Deps = [];
 
     {
-        const p = Object.keys(libraryMeta?.dependencies || {}).map(async (key) => {
+        const p = Object.keys(dependencies).map(async (key) => {
             const dep: Dep = {
                 name: key,
-                version: libraryMeta.dependencies![key],
+                version: dependencies![key],
             };
 
             const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${dep.version}`, ooPackageName));

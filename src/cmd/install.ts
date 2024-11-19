@@ -104,6 +104,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
 export async function installPackage(options: InstallPackageOptions): Promise<InstallPackageResult> {
     const dependencies = await getDependencies(options.workdir);
 
+    const primaryDepNames: InstallPackageResult["primaryDepNames"] = [];
     const alreadyInstalled: Deps = [];
     const needInstall: Deps = [];
 
@@ -120,6 +121,8 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
                     version = await findLatestVersion(dep.name, options.registry, options.token);
                 }
             }
+
+            primaryDepNames.push(`${dep.name}-${version}`);
 
             const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${version}`, ooPackageName));
             if (existsDisk && dependencies?.[dep.name] === version) {
@@ -165,12 +168,14 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
 
     return {
         deps,
+        primaryDepNames,
     };
 }
 
 // oopm install
 export async function installAll(options: InstallAllOptions): Promise<InstallAllResult> {
     const dependencies = await getDependencies(options.workdir);
+    const primaryDepNames: InstallAllResult["primaryDepNames"] = [];
 
     const alreadyInstalled: Deps = [];
     const needInstall: Deps = [];
@@ -189,6 +194,8 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
             else {
                 needInstall.push(dep);
             }
+
+            primaryDepNames.push(`${dep.name}-${dep.version}`);
         });
 
         await Promise.all(p);
@@ -206,6 +213,7 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
 
     return {
         deps,
+        primaryDepNames,
     };
 }
 

@@ -22,6 +22,7 @@ export interface InstallPackageResult {
         meta: Omit<OOPackageSchema, "scripts">;
         isAlreadyExist: boolean;
     }>;
+    primaryDepNames: Array<`${Dep["name"]}-${Dep["version"]}`>;
 }
 
 export interface InstallAllResult extends InstallPackageResult {}

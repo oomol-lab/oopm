@@ -151,6 +151,12 @@ describe.sequential("install all", () => {
             registry: ctx.registry.endpoint,
         });
 
+        expect(new Set(result.primaryDepNames)).toEqual(new Set([
+            "a-0.0.1",
+            "b-0.0.1",
+            "c-0.0.1",
+        ]));
+
         expect(result.deps).toStrictEqual({
             "a-0.0.1": {
                 name: "a",
@@ -251,6 +257,12 @@ describe.sequential("install deps", () => {
             distDir,
             registry: ctx.registry.endpoint,
         });
+
+        expect(new Set(result.primaryDepNames)).toEqual(new Set([
+            "a-0.0.1",
+            "b-0.0.2",
+            "c-0.0.1",
+        ]));
 
         expect(result.deps).toStrictEqual({
             "a-0.0.1": {

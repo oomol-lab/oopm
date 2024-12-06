@@ -37,6 +37,7 @@ describe.concurrent("generatePackageJson", () => {
             author: "Kevin Cui <bh@bugs.cc>",
             description: "A test package",
             keywords: ["test", "package"],
+            icon: "icon.png",
             dependencies: {
                 foo: "1.0.0",
                 bar: "1.0.0",
@@ -50,6 +51,7 @@ describe.concurrent("generatePackageJson", () => {
         expect(result).toEqual({
             ...content,
             scripts: {},
+            icon: path.join("package", "icon.png"),
         });
     });
 });

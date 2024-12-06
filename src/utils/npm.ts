@@ -36,7 +36,7 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
         throw new Error(`Miss required field: version in ${ooPackagePath}`);
     }
 
-    if (content.icon) {
+    if (content.icon?.startsWith("./")) {
         content.icon = path.join("package", content.icon);
     }
 

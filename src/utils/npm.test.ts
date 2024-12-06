@@ -37,7 +37,7 @@ describe.concurrent("generatePackageJson", () => {
             author: "Kevin Cui <bh@bugs.cc>",
             description: "A test package",
             keywords: ["test", "package"],
-            icon: "icon.png",
+            icon: "./icon.png",
             dependencies: {
                 foo: "1.0.0",
                 bar: "1.0.0",
@@ -52,6 +52,23 @@ describe.concurrent("generatePackageJson", () => {
             ...content,
             scripts: {},
             icon: path.join("package", "icon.png"),
+        });
+    });
+
+    it("should not change icon when not starts with ./", async (ctx) => {
+        const content = {
+            name: "test",
+            version: "1.0.0",
+            icon: ":coffee:",
+        };
+        const doc = new YAML.Document(content);
+        await writeFile(path.join(ctx.workdir, "package.oo.yaml"), String(doc));
+
+        const result = await generatePackageJson(ctx.workdir, false);
+
+        expect(result).toEqual({
+            ...content,
+            scripts: {},
         });
     });
 });

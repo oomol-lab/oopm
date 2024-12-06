@@ -37,7 +37,7 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
     }
 
     if (content.icon?.startsWith("./")) {
-        content.icon = path.join("package", content.icon);
+        content.icon = `./${path.join("package", content.icon)}`;
     }
 
     content.scripts = {};

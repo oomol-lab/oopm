@@ -51,7 +51,7 @@ describe.concurrent("generatePackageJson", () => {
         expect(result).toEqual({
             ...content,
             scripts: {},
-            icon: path.join("package", "icon.png"),
+            icon: `./${path.join("package", "icon.png")}`,
         });
     });
 

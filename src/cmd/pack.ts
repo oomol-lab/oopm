@@ -8,6 +8,7 @@ export const defaultIgnore = [
     "node_modules",
     ".git",
     ".DS_Store",
+    "__pycache__",
 ];
 
 export async function prePack(p: string, ignore: string[]) {

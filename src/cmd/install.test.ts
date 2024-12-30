@@ -394,6 +394,68 @@ describe.sequential("install deps", () => {
             "b-0.0.1/package.oo.yaml",
         ]));
     });
+
+    it("should install specified version when workdir is not specified", async (ctx) => {
+        const p = fixture("install_deps_not_workdir");
+
+        // Publish `remote_storage` to registry
+        {
+            const remoteStorage = path.join(p, "remote_storage");
+            await Promise.all([
+                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token"),
+            ]);
+        }
+
+        // Create distDir
+        const distDir = await tempDir();
+
+        const result = await install({
+            deps: [
+                { name: "a", version: "0.0.2" },
+                { name: "b", version: "0.0.1" },
+            ],
+            save: true,
+            token: "fake-token",
+            distDir,
+            registry: ctx.registry.endpoint,
+        });
+
+        expect(new Set(result.primaryDepNames)).toEqual(new Set([
+            "a-0.0.2",
+            "b-0.0.1",
+        ]));
+
+        expect(result.deps).toStrictEqual({
+            "a-0.0.2": {
+                name: "a",
+                version: "0.0.2",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "b-0.0.1": {
+                name: "b",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+        });
+
+        const fileList = await fg.glob(`**/${ooPackageName}`, {
+            cwd: distDir,
+            onlyFiles: true,
+            absolute: false,
+        });
+
+        expect(new Set(fileList)).toEqual(new Set([
+            "a-0.0.2/package.oo.yaml",
+            "b-0.0.1/package.oo.yaml",
+        ]));
+    });
 });
 
 describe.sequential("unknown type", () => {

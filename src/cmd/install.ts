@@ -29,7 +29,7 @@ export interface InstallFileOptions extends InstallBasicOptions {
 }
 
 export interface InstallPackageOptions extends InstallBasicOptions {
-    workdir: string;
+    workdir?: string;
     deps: DepRaw[];
     token?: string;
     save: boolean;
@@ -226,7 +226,7 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
 interface _InstallOptions {
     save: boolean;
     token?: string;
-    workdir: string;
+    workdir?: string;
     distDir: string;
     alreadyInstalled: Deps;
     needInstall: Deps;
@@ -289,7 +289,7 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
             }
         });
 
-    if (options.save) {
+    if (options.save && options.workdir) {
         await updateDependencies(options.workdir, options.needInstall);
     }
 

@@ -6,7 +6,10 @@ import { ooPackageName } from "../const";
 import { exists, readFile, writeFile } from "./fs";
 import { nerfURL } from "./misc";
 
-export async function getDependencies(dir: string): Promise<Record<string, string>> {
+export async function getDependencies(dir?: string): Promise<Record<string, string>> {
+    if (dir === undefined) {
+        return {};
+    }
     const ooPackagePath = path.join(dir, ooPackageName);
     if (!await exists(path.join(dir, ooPackageName))) {
         return {};

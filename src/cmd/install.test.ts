@@ -316,6 +316,84 @@ describe.sequential("install deps", () => {
             "d-0.0.1/package.oo.yaml",
         ]));
     });
+
+    it("manually specifying the version should be the highest priority", async (ctx) => {
+        const p = fixture("install_deps_priority");
+
+        // Publish `remote_storage` to registry
+        {
+            const remoteStorage = path.join(p, "remote_storage");
+            await Promise.all([
+                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token"),
+            ]);
+        }
+
+        // Create distDir
+        const distDir = await tempDir();
+
+        // Copy `entry` to workdir
+        await copyDir(path.join(p, "entry"), ctx.workdir);
+
+        const result = await install({
+            deps: [
+                {
+                    name: "a",
+                    version: "0.0.2",
+                },
+                {
+                    name: "b",
+                    version: "0.0.1",
+                },
+            ],
+            save: true,
+            token: "fake-token",
+            workdir: ctx.workdir,
+            distDir,
+            registry: ctx.registry.endpoint,
+        });
+
+        expect(new Set(result.primaryDepNames)).toEqual(new Set([
+            "a-0.0.2",
+            "b-0.0.1",
+        ]));
+
+        expect(result.deps).toStrictEqual({
+            "a-0.0.2": {
+                name: "a",
+                version: "0.0.2",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "b-0.0.1": {
+                name: "b",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+        });
+
+        const deps = (await generatePackageJson(ctx.workdir, false)).dependencies;
+        expect(deps).toEqual({
+            a: "0.0.2",
+            b: "0.0.1",
+        });
+
+        const fileList = await fg.glob(`**/${ooPackageName}`, {
+            cwd: distDir,
+            onlyFiles: true,
+            absolute: false,
+        });
+
+        expect(new Set(fileList)).toEqual(new Set([
+            "a-0.0.2/package.oo.yaml",
+            "b-0.0.1/package.oo.yaml",
+        ]));
+    });
 });
 
 describe.sequential("unknown type", () => {

@@ -140,6 +140,12 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
         });
 
         Object.keys(dependencies).forEach((key) => {
+            // If there is a dependency, skip it
+            // Because it is manually specified by the user, it has the highest priority
+            if (options.deps.some(dep => dep.name === key)) {
+                return;
+            }
+
             p.push((async (key) => {
                 const dep: Dep = {
                     name: key,

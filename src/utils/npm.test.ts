@@ -42,7 +42,6 @@ describe.concurrent("generatePackageJson", () => {
                 foo: "1.0.0",
                 bar: "1.0.0",
             },
-            repository: "https://github.com/example/repo",
         };
         const doc = new YAML.Document(content);
         await writeFile(path.join(ctx.workdir, "package.oo.yaml"), String(doc));
@@ -53,9 +52,6 @@ describe.concurrent("generatePackageJson", () => {
             ...content,
             scripts: {},
             icon: `./${path.join("package", "icon.png")}`,
-            repository: {
-                url: "https://github.com/example/repo",
-            },
         });
     });
 

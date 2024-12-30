@@ -36,8 +36,4 @@ export interface OOPackageSchema {
     dependencies?: Record<string, string>;
     scripts: Record<string, string>;
     icon?: string;
-    repository?: string | {
-        type?: string;
-        url?: string;
-    };
 }

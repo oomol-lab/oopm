@@ -40,12 +40,6 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
         content.icon = `./${path.join("package", content.icon)}`;
     }
 
-    if (typeof content.repository === "string") {
-        content.repository = {
-            url: content.repository,
-        };
-    }
-
     content.scripts = {};
 
     if (stringify) {

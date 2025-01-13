@@ -1,4 +1,5 @@
 import path from "node:path";
+import * as tar from "tar";
 import { afterEach, describe, expect, it } from "vitest";
 import { fixture } from "../../tests/helper/fs";
 import { exists, remove } from "../utils/fs";
@@ -44,6 +45,17 @@ describe("pack", () => {
         await remove(tgz);
         await pack(p, p);
         await expect(exists(tgz)).resolves.toBe(true);
+
+        {
+            const result: string[] = [];
+            await tar.t({
+                f: tgz,
+                onReadEntry: (entry) => {
+                    result.push(entry.path.replaceAll("\\", "/"));
+                },
+            });
+            expect(result).toContainEqual("package/package/.gitignore");
+        }
         await remove(tgz);
     });
 });

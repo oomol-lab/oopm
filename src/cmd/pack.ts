@@ -18,7 +18,7 @@ export async function prePack(p: string, ignore: string[]) {
 
     await Promise.all([
         copyDir(p, path.join(workdir, "package"), (source, _) => {
-            const relative = path.relative(p, source);
+            const relative = path.relative(p, source).split(path.sep);
             return !ignore.some(i => relative.includes(i));
         }),
         writeFile(path.join(workdir, "package.json"), packageJson),

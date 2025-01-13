@@ -52,6 +52,10 @@ describe.concurrent("generatePackageJson", () => {
             ...content,
             scripts: {},
             icon: `./${path.join("package", "icon.png")}`,
+            files: [
+                "package",
+                "package/.gitignore",
+            ],
         });
     });
 
@@ -69,6 +73,10 @@ describe.concurrent("generatePackageJson", () => {
         expect(result).toEqual({
             ...content,
             scripts: {},
+            files: [
+                "package",
+                "package/.gitignore",
+            ],
         });
     });
 });

@@ -45,6 +45,11 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
 
     content.scripts = {};
 
+    content.files = [
+        "package",
+        "package/.gitignore",
+    ];
+
     if (stringify) {
         return JSON.stringify(content, null, 2);
     }

@@ -61,7 +61,7 @@
   "dependencies": {
     "commander": "^12.1.0",
     "execa": "^9.5.0",
-    "fast-glob": "^3.3.2",
+    "globby": "^14.0.2",
     "tar": "^7.4.3",
     "yaml": "^2.6.0"
   }

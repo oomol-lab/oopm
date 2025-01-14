@@ -1,5 +1,5 @@
 import path from "node:path";
-import fg from "fast-glob";
+import { globby } from "globby";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fixture } from "../../tests/helper/fs";
 import { Registry } from "../../tests/helper/registry";
@@ -39,7 +39,7 @@ describe.sequential("install file", () => {
 
         expect(await exists(path.join(ctx.workdir, folderName, ooPackageName))).toBe(true);
 
-        const fileList = await fg.glob("**/*", {
+        const fileList = await globby("**", {
             cwd: path.join(ctx.workdir, folderName),
             onlyFiles: true,
             absolute: false,
@@ -89,7 +89,7 @@ describe.sequential("install file", () => {
 
         expect(await exists(path.join(ctx.workdir, folderName, ooPackageName))).toBe(true);
 
-        const fileList = await fg.glob("**/*", {
+        const fileList = await globby("**", {
             cwd: path.join(ctx.workdir, folderName),
             onlyFiles: true,
             absolute: false,
@@ -202,7 +202,7 @@ describe.sequential("install all", () => {
             },
         });
 
-        const fileList = await fg.glob(`**/${ooPackageName}`, {
+        const fileList = await globby(`**/${ooPackageName}`, {
             cwd: distDir,
             onlyFiles: true,
             absolute: false,
@@ -303,7 +303,7 @@ describe.sequential("install deps", () => {
             d: "0.0.1",
         });
 
-        const fileList = await fg.glob(`**/${ooPackageName}`, {
+        const fileList = await globby(`**/${ooPackageName}`, {
             cwd: distDir,
             onlyFiles: true,
             absolute: false,
@@ -383,7 +383,7 @@ describe.sequential("install deps", () => {
             b: "0.0.1",
         });
 
-        const fileList = await fg.glob(`**/${ooPackageName}`, {
+        const fileList = await globby(`**/${ooPackageName}`, {
             cwd: distDir,
             onlyFiles: true,
             absolute: false,
@@ -445,7 +445,7 @@ describe.sequential("install deps", () => {
             },
         });
 
-        const fileList = await fg.glob(`**/${ooPackageName}`, {
+        const fileList = await globby(`**/${ooPackageName}`, {
             cwd: distDir,
             onlyFiles: true,
             absolute: false,

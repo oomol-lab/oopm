@@ -1,5 +1,6 @@
 import path from "node:path";
 import { execa } from "execa";
+import { globby } from "globby";
 import { copyDir, remove, tempDir, writeFile } from "../utils/fs";
 import { env } from "../utils/misc";
 import { generatePackageJson } from "../utils/npm";
@@ -16,10 +17,22 @@ export async function prePack(p: string, ignore: string[]) {
 
     const workdir = await tempDir();
 
+    const files = await globby("**", {
+        cwd: p,
+        dot: true,
+        onlyFiles: false,
+        gitignore: true,
+        ignore,
+        absolute: true,
+    });
+
     await Promise.all([
         copyDir(p, path.join(workdir, "package"), (source, _) => {
-            const relative = path.relative(p, source).split(path.sep);
-            return !ignore.some(i => relative.includes(i));
+            if (source === p) {
+                return true;
+            }
+
+            return files.includes(source);
         }),
         writeFile(path.join(workdir, "package.json"), packageJson),
     ]);

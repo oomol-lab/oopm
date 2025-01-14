@@ -1,6 +1,6 @@
 import type { Deps, OOPackageSchema } from "../types";
 import path from "node:path";
-import fg from "fast-glob";
+import { globby } from "globby";
 import YAML from "yaml";
 import { ooPackageName } from "../const";
 import { exists, readFile, writeFile } from "./fs";
@@ -120,7 +120,7 @@ export async function createNpmrc(dir: string, registry: string, token: string) 
 }
 
 export async function transformNodeModules(dir: string) {
-    const result = await fg("node_modules/**/package/package.oo.yaml", {
+    const result = await globby("node_modules/**/package/package.oo.yaml", {
         onlyFiles: true,
         cwd: dir,
         dot: false,

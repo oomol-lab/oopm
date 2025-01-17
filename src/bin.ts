@@ -1,3 +1,4 @@
+import path from "node:path";
 import process from "node:process";
 import { program } from "commander";
 import { version } from "../package.json";
@@ -14,7 +15,7 @@ program.command("pack")
     .description("Pack a package")
     .argument("[dir]", "The package directory", ".")
     .action(async (dir) => {
-        await pack(dir, process.cwd());
+        await pack(path.resolve(dir), process.cwd());
     });
 
 program.command("publish")
@@ -23,7 +24,7 @@ program.command("publish")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .requiredOption("-t --token <token>", "The token")
     .action(async (dir, options) => {
-        await publish(dir, options.registry, options.token);
+        await publish(path.resolve(dir), options.registry, options.token);
     });
 
 program.command("install")

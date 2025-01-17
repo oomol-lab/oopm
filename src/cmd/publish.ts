@@ -14,8 +14,6 @@ export async function publish(p: string, registry: string, token: string): Promi
     await execa({
         cwd: workdir,
         env: env(registry),
-        stdout: "inherit",
-        stderr: "inherit",
     })`npm publish`;
 
     await remove(workdir).catch(() => {});

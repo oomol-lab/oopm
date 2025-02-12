@@ -1,2 +1,5 @@
 name: c
 version: 0.0.2
+dependencies:
+  e: 0.0.2
+  b: 0.0.1

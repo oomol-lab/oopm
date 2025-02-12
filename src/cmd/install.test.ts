@@ -127,6 +127,9 @@ describe.sequential("install all", () => {
                 publish(path.join(remoteStorage, "c-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.3"), ctx.registry.endpoint, "fake-token"),
             ]);
         }
 
@@ -155,6 +158,8 @@ describe.sequential("install all", () => {
             "a-0.0.1",
             "b-0.0.1",
             "c-0.0.1",
+            "f-0.0.1",
+            "e-0.0.3",
         ]));
 
         expect(result.deps).toStrictEqual({
@@ -200,6 +205,27 @@ describe.sequential("install all", () => {
                 target: expect.any(String),
                 meta: expect.any(Object),
             },
+            "e-0.0.2": {
+                name: "e",
+                version: "0.0.2",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "e-0.0.3": {
+                name: "e",
+                version: "0.0.3",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
+            "f-0.0.1": {
+                name: "f",
+                version: "0.0.1",
+                isAlreadyExist: false,
+                target: expect.any(String),
+                meta: expect.any(Object),
+            },
         });
 
         const fileList = await globby(`**/${ooPackageName}`, {
@@ -215,6 +241,9 @@ describe.sequential("install all", () => {
             "c-0.0.2/package.oo.yaml",
             "d-0.0.1/package.oo.yaml",
             "e-0.0.1/package.oo.yaml",
+            "e-0.0.2/package.oo.yaml",
+            "e-0.0.3/package.oo.yaml",
+            "f-0.0.1/package.oo.yaml",
         ]));
     });
 });

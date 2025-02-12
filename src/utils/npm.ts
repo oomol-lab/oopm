@@ -127,6 +127,12 @@ export async function transformNodeModules(dir: string) {
         absolute: true,
     });
 
+    const map = new Map<string, {
+        source: string;
+        name: string;
+        version: string;
+    }>();
+
     const ps = result
         // Filter out paths that do not conform to this rule: node_modules/PACKAGE_NAME/package/package.oo.yaml
         .filter((p) => {
@@ -137,12 +143,15 @@ export async function transformNodeModules(dir: string) {
         .map(async (p) => {
             const source = path.dirname(p);
             const { name, version } = await generatePackageJson(source, false);
-            return {
+
+            map.set(`${name}-${version}`, {
                 source,
                 name,
                 version,
-            };
+            });
         });
 
-    return await Promise.all(ps);
+    await Promise.all(ps);
+
+    return Array.from(map.values());
 }

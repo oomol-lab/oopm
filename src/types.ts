@@ -38,3 +38,9 @@ export interface OOPackageSchema {
     icon?: string;
     files?: string[];
 }
+
+export interface SearchDep {
+    name: string;
+    version: string;
+    distDir: string;
+}

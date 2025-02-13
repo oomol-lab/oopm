@@ -24,6 +24,14 @@ export default antfu({
 
     lessOpinionated: true,
 
+    rules: {
+        "unused-imports/no-unused-vars": ["error", {
+            argsIgnorePattern: "^_",
+            varsIgnorePattern: "^_",
+            caughtErrorsIgnorePattern: "^_",
+        }],
+    },
+
     // `.eslintignore` is no longer supported in Flat config, use `ignores` instead
     ignores: [
 

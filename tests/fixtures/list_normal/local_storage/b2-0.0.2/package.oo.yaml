@@ -1,0 +1,6 @@
+name: b2
+version: 0.0.2
+dependencies:
+  c1: 0.0.1
+  c2: 0.0.2
+  c3: 0.0.2

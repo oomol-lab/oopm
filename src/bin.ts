@@ -3,6 +3,7 @@ import process from "node:process";
 import { program } from "commander";
 import { version } from "../package.json";
 import { install } from "./cmd/install";
+import { list } from "./cmd/list";
 import { pack } from "./cmd/pack";
 import { publish } from "./cmd/publish";
 
@@ -68,6 +69,16 @@ program.command("install")
             distDir: options.distDir,
             registry: options.registry,
         });
+    });
+
+program.command("list")
+    .description("List all packages")
+    .argument("[dir]", "The workdir directory", ".")
+    .requiredOption("-s --search-dir <searchDir>", "The search directory")
+    .action(async (dir, options) => {
+        const result = await list(path.resolve(dir), options.searchDir);
+        // eslint-disable-next-line no-console
+        console.log(JSON.stringify(result, null, 2));
     });
 
 program.parse();

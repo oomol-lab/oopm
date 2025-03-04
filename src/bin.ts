@@ -32,6 +32,7 @@ program.command("install")
     .description("Install a package")
     .argument("[pkg...]", "The name of the pkg to be installed or the local address.", "")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
+    .option("-t --token <token>", "The token")
     .requiredOption("-d --dist-dir <distDir>", "The dist directory")
     .action(async (pkgs, options): Promise<any> => {
         if (pkgs.length === 0) {
@@ -40,6 +41,7 @@ program.command("install")
                 workdir: process.cwd(),
                 distDir: options.distDir,
                 registry: options.registry,
+                token: options.token,
             });
         }
 
@@ -68,6 +70,7 @@ program.command("install")
             workdir: process.cwd(),
             distDir: options.distDir,
             registry: options.registry,
+            token: options.token,
         });
     });
 

@@ -59,8 +59,13 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
 }
 
 export async function updateDependencies(dir: string, deps: Deps) {
+    const ooPackagePath = path.join(dir, ooPackageName);
+    if (!(await exists(ooPackagePath))) {
+        await writeFile(ooPackagePath, "");
+    }
+
     const rawContent = await readFile(path.join(dir, ooPackageName));
-    const content = YAML.parse(rawContent) as OOPackageSchema;
+    const content = YAML.parse(rawContent) as OOPackageSchema || {};
 
     if (!content.dependencies) {
         content.dependencies = {};

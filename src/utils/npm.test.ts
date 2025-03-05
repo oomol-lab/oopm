@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import YAML from "yaml";
 import { fixture } from "../../tests/helper/fs";
 import { remove, tempDir, writeFile } from "./fs";
-import { generatePackageJson, transformNodeModules } from "./npm";
+import { generatePackageJson, transformNodeModules, updateDependencies } from "./npm";
 
 beforeEach(async (ctx) => {
     const temp = await tempDir();
@@ -114,5 +114,18 @@ describe.concurrent("transformNodeModules", () => {
                 version: "0.0.1",
             },
         ]));
+    });
+});
+
+describe.concurrent("updateDependencies", () => {
+    it("should create file when not found", async (ctx) => {
+        const result = updateDependencies(ctx.workdir, [
+            {
+                name: "foo",
+                version: "1.0.0",
+            },
+        ]);
+
+        await expect(result).resolves.toBe(void 0);
     });
 });

@@ -547,6 +547,17 @@ describe.sequential("install deps", () => {
             "a-0.0.2/package.oo.yaml",
             "b-0.0.1/package.oo.yaml",
         ]));
+
+        expect(await generatePackageJson(workdir, false)).toEqual({
+            name: path.basename(workdir),
+            version: "0.0.1",
+            files: expect.any(Array),
+            scripts: {},
+            dependencies: {
+                a: "0.0.2",
+                b: "0.0.1",
+            },
+        });
     });
 });
 

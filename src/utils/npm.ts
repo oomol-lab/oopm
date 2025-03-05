@@ -67,13 +67,20 @@ export async function updateDependencies(dir: string, deps: Deps) {
     const rawContent = await readFile(path.join(dir, ooPackageName));
     const content = YAML.parse(rawContent) as OOPackageSchema || {};
 
+    if (!content.name) {
+        content.name = path.basename(dir);
+    }
+
+    if (!content.version) {
+        content.version = "0.0.1";
+    }
+
     if (!content.dependencies) {
         content.dependencies = {};
     }
-    else {
-        for (const dep of deps) {
-            content.dependencies[dep.name] = dep.version;
-        }
+
+    for (const dep of deps) {
+        content.dependencies[dep.name] = dep.version;
     }
 
     const yamlContent = YAML.stringify(content);

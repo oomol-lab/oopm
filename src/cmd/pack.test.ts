@@ -17,9 +17,9 @@ describe("prePack", () => {
 
         ctx.workdir = await prePack(p, []);
 
-        expect(exists(ctx.workdir)).resolves.toBe(true);
-        expect(exists(path.join(ctx.workdir, "package"))).resolves.toBe(true);
-        expect(exists(path.join(ctx.workdir, "package.json"))).resolves.toBe(true);
+        await expect(exists(ctx.workdir)).resolves.toBe(true);
+        await expect(exists(path.join(ctx.workdir, "package"))).resolves.toBe(true);
+        await expect(exists(path.join(ctx.workdir, "package.json"))).resolves.toBe(true);
     });
 
     it("should ignore node_modules", async (ctx) => {
@@ -29,10 +29,10 @@ describe("prePack", () => {
             "node_modules",
         ]);
 
-        expect(exists(ctx.workdir)).resolves.toBe(true);
-        expect(exists(path.join(ctx.workdir, "package"))).resolves.toBe(true);
-        expect(exists(path.join(ctx.workdir, "package.json"))).resolves.toBe(true);
-        expect(exists(path.join(ctx.workdir, "package", "node_modules"))).resolves.toBe(false);
+        await expect(exists(ctx.workdir)).resolves.toBe(true);
+        await expect(exists(path.join(ctx.workdir, "package"))).resolves.toBe(true);
+        await expect(exists(path.join(ctx.workdir, "package.json"))).resolves.toBe(true);
+        await expect(exists(path.join(ctx.workdir, "package", "node_modules"))).resolves.toBe(false);
     });
 });
 

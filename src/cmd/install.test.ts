@@ -65,7 +65,7 @@ describe.sequential("install file", () => {
     });
 
     it("should failed with not exists tar", async (ctx) => {
-        expect(install({
+        await expect(install({
             file: path.join(ctx.workdir, "not-exists.tgz"),
             distDir: ctx.workdir,
         })).rejects.toThrow("File not found: ");
@@ -491,6 +491,6 @@ describe.sequential("unknown type", () => {
     it("should failed", async () => {
         // eslint-disable-next-line ts/ban-ts-comment
         // @ts-expect-error
-        expect(install({})).rejects.toThrow("Invalid install options");
+        await expect(install({})).rejects.toThrow("Invalid install options");
     });
 });

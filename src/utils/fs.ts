@@ -8,7 +8,22 @@ export async function tempDir() {
 }
 
 export async function move(src: string, dest: string) {
-    await fsP.rename(src, dest);
+    try {
+        await fsP.rename(src, dest);
+    }
+    catch (err) {
+        // See: https://stackoverflow.com/questions/43206198/what-does-the-exdev-cross-device-link-not-permitted-error-mean
+        if ((err as NodeJS.ErrnoException).code !== "EXDEV") {
+            throw err;
+        }
+
+        await moveAcrossDevice(src, dest);
+    }
+}
+
+async function moveAcrossDevice(src: string, dest: string) {
+    await copyDir(src, dest);
+    await remove(src);
 }
 
 export async function copyDir(src: string, dest: string, filter?: (source: string, destination: string) => boolean) {

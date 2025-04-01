@@ -246,6 +246,50 @@ describe.sequential("install all", () => {
             "f-0.0.1/package.oo.yaml",
         ]));
     });
+
+    it("should fail with cancel signal", async (ctx) => {
+        const p = fixture("install_all");
+
+        // publish `remote_storage` to registry
+        {
+            const remoteStorage = path.join(p, "remote_storage");
+            await Promise.all([
+                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "c-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.3"), ctx.registry.endpoint, "fake-token"),
+            ]);
+        }
+
+        // Copy `local_storage` to distDir
+        const distDir = await tempDir();
+        {
+            const localStorage = path.join(p, "local_storage");
+            await Promise.all([
+                copyDir(path.join(localStorage, "c-0.0.1"), path.join(distDir, "c-0.0.1")),
+                copyDir(path.join(localStorage, "e-0.0.1"), path.join(distDir, "e-0.0.1")),
+            ]);
+        }
+
+        // Copy `entry` to workdir
+        await copyDir(path.join(p, "entry"), ctx.workdir);
+
+        const controller = new AbortController();
+        controller.abort();
+
+        await expect(install({
+            all: true,
+            token: "fake-token",
+            workdir: ctx.workdir,
+            distDir,
+            registry: ctx.registry.endpoint,
+            cancelSignal: controller.signal,
+        })).rejects.toThrow("This operation was aborted");
+    });
 });
 
 describe.sequential("install deps", () => {
@@ -558,6 +602,49 @@ describe.sequential("install deps", () => {
                 b: "0.0.1",
             },
         });
+    });
+
+    it("should fail with cancel signal", async (ctx) => {
+        const p = fixture("install_deps");
+
+        // publish `remote_storage` to registry
+        {
+            const remoteStorage = path.join(p, "remote_storage");
+            await Promise.all([
+                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "c-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
+            ]);
+            await publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token");
+        }
+
+        // Copy `local_storage` to distDir
+        const distDir = await tempDir();
+        {
+            const localStorage = path.join(p, "local_storage");
+            await copyDir(path.join(localStorage, "a-0.0.1"), path.join(distDir, "a-0.0.1"));
+        }
+
+        // Copy `entry` to workdir
+        await copyDir(path.join(p, "entry"), ctx.workdir);
+
+        const controller = new AbortController();
+        controller.abort();
+
+        await expect(install({
+            deps: [
+                { name: "a" },
+                { name: "b" },
+                { name: "c", version: "0.0.1" },
+            ],
+            save: true,
+            token: "fake-token",
+            workdir: ctx.workdir,
+            distDir,
+            registry: ctx.registry.endpoint,
+            cancelSignal: controller.signal,
+        })).rejects.toThrow("This operation was aborted");
     });
 });
 

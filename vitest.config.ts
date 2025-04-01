@@ -13,6 +13,9 @@ export default defineConfig({
             exclude: ["src/index.ts", "src/bin.ts", "src/**/*.test.ts"],
             enabled: true,
         },
+        include: [
+            "src/**/*.test.ts",
+        ],
         sequence: {
             concurrent: true,
         },

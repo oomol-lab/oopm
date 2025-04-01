@@ -26,9 +26,15 @@ export async function prePack(p: string, ignore: string[]) {
         absolute: true,
     });
 
+    const alwaysAllow = [path.join(p, ".oo-thumbnail.json")];
+
     await Promise.all([
         copyDir(p, path.join(workdir, "package"), (source, _) => {
             if (source === p) {
+                return true;
+            }
+
+            if (alwaysAllow.includes(source)) {
                 return true;
             }
 

@@ -247,7 +247,7 @@ describe.sequential("install all", () => {
         ]));
     });
 
-    it("should failed with cancel signal", async (ctx) => {
+    it("should fail with cancel signal", async (ctx) => {
         const p = fixture("install_all");
 
         // publish `remote_storage` to registry
@@ -604,7 +604,7 @@ describe.sequential("install deps", () => {
         });
     });
 
-    it("should failed with cancel signal", async (ctx) => {
+    it("should fail with cancel signal", async (ctx) => {
         const p = fixture("install_deps");
 
         // publish `remote_storage` to registry

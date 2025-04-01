@@ -4,3 +4,4 @@
 dist
 html
 coverage
+tests/fixtures/__TEMP_*

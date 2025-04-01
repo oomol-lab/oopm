@@ -15,6 +15,8 @@ import {
 
 export interface InstallBasicOptions {
     distDir: string;
+
+    cancelSignal?: AbortSignal;
 }
 
 export interface InstallAllOptions extends InstallBasicOptions {
@@ -170,6 +172,8 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
         distDir: options.distDir,
         token: options.token,
         registry: options.registry,
+
+        cancelSignal: options.cancelSignal,
     });
 
     return {
@@ -215,6 +219,8 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
         distDir: options.distDir,
         token: options.token,
         registry: options.registry,
+
+        cancelSignal: options.cancelSignal,
     });
 
     return {
@@ -231,6 +237,8 @@ interface _InstallOptions {
     alreadyInstalled: Deps;
     needInstall: Deps;
     registry: string;
+
+    cancelSignal?: AbortSignal;
 }
 
 async function _install(options: _InstallOptions): Promise<InstallPackageResult["deps"]> {
@@ -242,6 +250,8 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
         env: env(options.registry),
         stdout: "inherit",
         stderr: "inherit",
+        cancelSignal: options.cancelSignal,
+        forceKillAfterDelay: 1000,
     })`npm install`;
 
     const info = await transformNodeModules(temp);

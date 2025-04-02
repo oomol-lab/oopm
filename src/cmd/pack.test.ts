@@ -82,4 +82,35 @@ describe("pack", () => {
         }
         await remove(tgz);
     });
+
+    it("should not ignore .oo-thumbnail.json", async (ctx) => {
+        const _p = fixture("pack_ignore");
+        const p = path.join(path.dirname(_p), "__TEMP_pack_ignore");
+
+        ctx.onTestFinished(async () => {
+            await remove(p);
+        });
+
+        await copyDir(_p, p);
+        await move(path.join(p, "_gitignore"), path.join(p, ".gitignore"));
+
+        const tgz = path.join(p, "pack_ignore-0.0.1.tgz");
+        await remove(tgz);
+        await pack(p, p);
+
+        await expect(exists(tgz)).resolves.toBe(true);
+
+        {
+            const result: string[] = [];
+            await tar.t({
+                f: tgz,
+                onReadEntry: (entry) => {
+                    result.push(entry.path.replaceAll("\\", "/"));
+                },
+            });
+
+            expect(result).toContainEqual("package/package/.oo-thumbnail.json");
+        }
+        await remove(tgz);
+    });
 });

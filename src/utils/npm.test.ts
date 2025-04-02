@@ -55,6 +55,7 @@ describe.concurrent("generatePackageJson", () => {
             files: [
                 "package",
                 "package/.gitignore",
+                "package/.oo-thumbnail.json",
             ],
         });
     });
@@ -76,6 +77,7 @@ describe.concurrent("generatePackageJson", () => {
             files: [
                 "package",
                 "package/.gitignore",
+                "package/.oo-thumbnail.json",
             ],
         });
     });

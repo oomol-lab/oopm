@@ -48,6 +48,7 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
     content.files = [
         "package",
         "package/.gitignore",
+        "package/.oo-thumbnail.json",
     ];
 
     if (stringify) {

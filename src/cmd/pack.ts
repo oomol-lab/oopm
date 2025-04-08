@@ -17,7 +17,7 @@ export async function prePack(p: string, ignore: string[]) {
 
     const workdir = await tempDir();
 
-    const files = await globby("**", {
+    const files = await globby(["**", "!.oomol"], {
         cwd: p,
         dot: true,
         onlyFiles: false,

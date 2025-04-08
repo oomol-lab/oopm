@@ -57,6 +57,7 @@ describe("prePack", () => {
         await expect(exists(path.join(ctx.workdir, "package", ".oo-thumbnail.json"))).resolves.toBe(true);
         await expect(exists(path.join(ctx.workdir, "package", "node_modules"))).resolves.toBe(false);
         await expect(exists(path.join(ctx.workdir, "package", "foo.txt"))).resolves.toBe(false);
+        await expect(exists(path.join(ctx.workdir, "package", ".oomol"))).resolves.toBe(false);
     });
 });
 

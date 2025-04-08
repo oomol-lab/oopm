@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import fs from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
 
@@ -152,9 +152,18 @@ enum NODE_TYPE {
     ValueNode = "value_node",
 }
 
+const isFile = async (path: string): Promise<boolean> => {
+    try {
+        return (await fs.stat(path)).isFile();
+    }
+    catch {
+        return false;
+    }
+};
+
 const readFile = async (path: string): Promise<string | undefined> => {
     try {
-        return await fs.promises.readFile(path, "utf8");
+        return await fs.readFile(path, "utf8");
     }
     catch { }
 };
@@ -178,19 +187,18 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
     async provideFlows(): Promise<FlowEntry[] | undefined> {
         const result: FlowEntry[] = [];
         const flowsDir = path.join(this.workspaceDir, "flows");
-        const items = fs.readdirSync(flowsDir);
-        const tasks: Promise<unknown>[] = [];
-        for (const name of items) {
+        const items = await fs.readdir(flowsDir);
+        await Promise.allSettled(items.map((name) => {
             const file = path.join(flowsDir, name, flowOOYaml);
-            if (fs.existsSync(file) && fs.statSync(file).isFile()) {
-                tasks.push(this._readFlow(name, file, result));
-            }
-        }
-        await Promise.allSettled(tasks);
+            return this._readFlow(name, file, result);
+        }));
         return result;
     }
 
     private async _readFlow(id: string, flowPath: string, result: FlowEntry[]) {
+        if (!await isFile(flowPath)) {
+            return;
+        }
         const yamlContent = readFile(flowPath);
         const jsonContent = readFile(flowPath.replace(flowOOYaml, flowUIOOJson));
         const entry: FlowEntry = {
@@ -214,7 +222,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         if (dep && task && version) {
             const pkgDir = path.join(this.storeDir, `${dep}-${version}`);
             const file = path.join(pkgDir, "tasks", task, taskOOYaml);
-            if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+            if (await isFile(file)) {
                 try {
                     return {
                         package: dep,

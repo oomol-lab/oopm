@@ -6,9 +6,7 @@ import { install } from "./cmd/install";
 import { list } from "./cmd/list";
 import { pack } from "./cmd/pack";
 import { publish } from "./cmd/publish";
-import { ooThumbnailName } from "./const";
-import { writeFile } from "./utils/fs";
-import { Thumbnail } from "./utils/thumbnail";
+import { thumbnail } from "./cmd/thumbnail";
 
 program
     .name("oopm")
@@ -92,9 +90,8 @@ program.command("thumbnail")
     .argument("[dir]", "The workdir directory", ".")
     .requiredOption("-s --search-dir <searchDir>", "The search directory")
     .action(async (dir, options) => {
-        const result = await new Thumbnail(path.resolve(dir), options.searchDir).provideThumbnail();
-        if (result) {
-            await writeFile(path.join(dir, ooThumbnailName), JSON.stringify(result));
+        const thumbnailPath = await thumbnail(path.resolve(dir), options.searchDir);
+        if (thumbnailPath) {
             // eslint-disable-next-line no-console
             console.log("Thumbnail generated successfully.");
         }

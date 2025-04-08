@@ -34,7 +34,7 @@ program.command("install")
     .argument("[pkg...]", "The name of the pkg to be installed or the local address.", "")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .option("-t --token <token>", "The token")
-    .requiredOption("-d --dist-dir <distDir>", "The dist directory")
+    .option("-d --dist-dir <distDir>", "The dist directory", `.oomol${path.sep}oopm-store`)
     .action(async (pkgs, options): Promise<any> => {
         if (pkgs.length === 0) {
             return await install({

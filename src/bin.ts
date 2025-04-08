@@ -6,6 +6,7 @@ import { install } from "./cmd/install";
 import { list } from "./cmd/list";
 import { pack } from "./cmd/pack";
 import { publish } from "./cmd/publish";
+import { thumbnail } from "./cmd/thumbnail";
 
 program
     .name("oopm")
@@ -82,6 +83,21 @@ program.command("list")
         const result = await list(path.resolve(dir), options.searchDir);
         // eslint-disable-next-line no-console
         console.log(JSON.stringify(result, null, 2));
+    });
+
+program.command("thumbnail")
+    .description("Generate thumbnail for a local package")
+    .argument("[dir]", "The workdir directory", ".")
+    .requiredOption("-s --search-dir <searchDir>", "The search directory")
+    .action(async (dir, options) => {
+        const thumbnailPath = await thumbnail(path.resolve(dir), options.searchDir);
+        if (thumbnailPath) {
+            // eslint-disable-next-line no-console
+            console.log("Thumbnail generated successfully.");
+        }
+        else {
+            console.error("Failed to generate thumbnail.");
+        }
     });
 
 program.parse();

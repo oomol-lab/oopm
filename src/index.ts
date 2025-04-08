@@ -22,6 +22,9 @@ export {
 export {
     publish,
 } from "./cmd/publish";
-export { ooPackageName } from "./const";
+export {
+    thumbnail,
+} from "./cmd/thumbnail";
+export { ooPackageName, ooThumbnailName } from "./const";
 export type { Dep, DepRaw, Deps, InstallAllResult, InstallFileResult, InstallPackageResult, OOPackageSchema, SearchDep } from "./types";
 export { transformNodeModules } from "./utils/npm";

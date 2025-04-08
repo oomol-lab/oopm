@@ -299,6 +299,13 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 node.additionalInputs = task.yaml.additional_inputs;
                 node.outputHandleDefs = task.yaml.outputs_def;
             }
+            else {
+                // Guess input handle defs from inputs from.
+                node.inputHandleDefs = raw.inputs_from?.map(a => ({
+                    handle: a.handle,
+                    json_schema: this._schemaFromValue(a.value),
+                }));
+            }
             node.additionalInputDefs = raw.inputs_def;
             node.handleInputsFrom = raw.inputs_from;
         }
@@ -316,6 +323,27 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         }
 
         return node;
+    }
+
+    private _schemaFromValue(value: any): any {
+        if (value == null) {
+            return {};
+        }
+        switch (typeof value) {
+            case "string":
+                return { type: "string" };
+            case "number":
+                return { type: "number" };
+            case "boolean":
+                return { type: "boolean" };
+            case "object":
+                if (Array.isArray(value)) {
+                    return { type: "array", items: this._schemaFromValue(value[0]) };
+                }
+                return { type: "object" };
+            default:
+                return {};
+        }
     }
 
     private async _resolveUrl(p: string | undefined, manifestPath: string): Promise<string | undefined> {

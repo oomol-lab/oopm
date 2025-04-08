@@ -2,7 +2,7 @@ import path from "node:path";
 import * as tar from "tar";
 import { afterEach, describe, expect, it } from "vitest";
 import { fixture } from "../../tests/helper/fs";
-import { copyDir, exists, move, remove } from "../utils/fs";
+import { copyDir, exists, move, remove, tempDir } from "../utils/fs";
 import { pack, prePack } from "./pack";
 
 afterEach(async (ctx) => {
@@ -37,7 +37,7 @@ describe("prePack", () => {
 
     it("should support .gitignore", async (ctx) => {
         const _p = fixture("prepack_git_ignore");
-        const p = path.join(path.dirname(_p), "__TEMP_prepack_git_ignore");
+        const p = await tempDir();
 
         ctx.onTestFinished(async () => {
             await remove(p);
@@ -85,7 +85,7 @@ describe("pack", () => {
 
     it("should not ignore .oo-thumbnail.json", async (ctx) => {
         const _p = fixture("pack_ignore");
-        const p = path.join(path.dirname(_p), "__TEMP_pack_ignore");
+        const p = await tempDir();
 
         ctx.onTestFinished(async () => {
             await remove(p);

@@ -43,6 +43,7 @@ describe.sequential("install file", () => {
             cwd: path.join(ctx.workdir, folderName),
             onlyFiles: true,
             absolute: false,
+            dot: true,
         });
 
         expect(new Set(fileList)).toEqual(new Set([
@@ -93,10 +94,12 @@ describe.sequential("install file", () => {
             cwd: path.join(ctx.workdir, folderName),
             onlyFiles: true,
             absolute: false,
+            dot: true,
         });
 
         expect(new Set(fileList)).toEqual(new Set([
             "package.oo.yaml",
+            "foo.txt",
         ]));
 
         {
@@ -228,16 +231,18 @@ describe.sequential("install all", () => {
             },
         });
 
-        const fileList = await globby(`**/${ooPackageName}`, {
+        const fileList = await globby("**", {
             cwd: distDir,
             onlyFiles: true,
             absolute: false,
+            dot: true,
         });
 
         expect(new Set(fileList)).toEqual(new Set([
             "a-0.0.1/package.oo.yaml",
             "b-0.0.1/package.oo.yaml",
             "c-0.0.1/package.oo.yaml",
+            "c-0.0.2/foo.txt",
             "c-0.0.2/package.oo.yaml",
             "d-0.0.1/package.oo.yaml",
             "e-0.0.1/package.oo.yaml",
@@ -376,15 +381,17 @@ describe.sequential("install deps", () => {
             d: "0.0.1",
         });
 
-        const fileList = await globby(`**/${ooPackageName}`, {
+        const fileList = await globby("**", {
             cwd: distDir,
             onlyFiles: true,
             absolute: false,
+            dot: true,
         });
 
         expect(new Set(fileList)).toEqual(new Set([
             "a-0.0.1/package.oo.yaml",
             "b-0.0.2/package.oo.yaml",
+            "c-0.0.1/foo.txt",
             "c-0.0.1/package.oo.yaml",
             "d-0.0.1/package.oo.yaml",
         ]));

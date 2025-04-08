@@ -1,7 +1,7 @@
 import type { Dep, DepRaw, Deps, InstallAllResult, InstallFileResult, InstallPackageResult } from "../types";
 import path from "node:path";
 import { execa } from "execa";
-import { ooPackageName } from "../const";
+import { ooPackageName, ooThumbnailName } from "../const";
 import { copyDir, exists, mkdir, move, remove, tempDir, xTar } from "../utils/fs";
 import { env } from "../utils/misc";
 import {
@@ -79,6 +79,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
         }
         await mkdir(path.dirname(targetDir));
         await move(tempDir, targetDir);
+        await remove(path.join(targetDir, ooThumbnailName));
         return {
             target: targetDir,
             meta,
@@ -93,7 +94,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
         await remove(targetDir);
     }
     await mkdir(path.dirname(targetDir));
-    await copyDir(options.file, targetDir);
+    await copyDir(options.file, targetDir, installFilter);
     return {
         target: targetDir,
         meta,
@@ -295,7 +296,7 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
             };
 
             if (!isAlreadyExist) {
-                return copyDir(i.source, target);
+                return copyDir(i.source, target, installFilter);
             }
         });
 
@@ -308,4 +309,8 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
     await remove(temp);
 
     return targets;
+}
+
+function installFilter(src: string, _dest: string, source: string, _destination: string): boolean {
+    return path.join(src, ooThumbnailName) !== source;
 }

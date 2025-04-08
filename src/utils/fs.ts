@@ -26,13 +26,13 @@ async function moveAcrossDevice(src: string, dest: string) {
     await remove(src);
 }
 
-export async function copyDir(src: string, dest: string, filter?: (source: string, destination: string) => boolean) {
+export async function copyDir(src: string, dest: string, filter?: (src: string, dest: string, source: string, destination: string) => boolean) {
     await fsP.cp(src, dest, {
         recursive: true,
         force: true,
         filter(source: string, destination: string): boolean | Promise<boolean> {
             if (filter) {
-                return filter(source, destination);
+                return filter(src, dest, source, destination);
             }
             return true;
         },

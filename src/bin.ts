@@ -29,18 +29,21 @@ program.command("publish")
         await publish(path.resolve(dir), options.registry, options.token);
     });
 
+const INSTALL_DIST_ENV = "OOPM_STORE_DIR";
 program.command("install")
     .description("Install a package")
     .argument("[pkg...]", "The name of the pkg to be installed or the local address.", "")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .option("-t --token <token>", "The token")
-    .option("-d --dist-dir <distDir>", "The dist directory", `.oomol${path.sep}oopm-store`)
+    .option("-d --dist-dir <distDir>", "The dist directory", `${INSTALL_DIST_ENV} environment variable or <cwd>${path.sep}.oomol${path.sep}oopm-store`)
     .action(async (pkgs, options): Promise<any> => {
+        const distDir = options.distDir || process.env[INSTALL_DIST_ENV] || path.join(process.cwd(), ".oomol", "oopm-store");
+
         if (pkgs.length === 0) {
             return await install({
                 all: true,
                 workdir: process.cwd(),
-                distDir: options.distDir,
+                distDir,
                 registry: options.registry,
                 token: options.token,
             });
@@ -49,7 +52,7 @@ program.command("install")
         if (pkgs.length === 1 && pkgs[0].startsWith(".")) {
             return await install({
                 file: pkgs[0],
-                distDir: options.distDir,
+                distDir,
             });
         }
 
@@ -69,7 +72,7 @@ program.command("install")
             }),
             save: true,
             workdir: process.cwd(),
-            distDir: options.distDir,
+            distDir,
             registry: options.registry,
             token: options.token,
         });

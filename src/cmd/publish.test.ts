@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fixture, listFilesWithBase64Tar } from "../../tests/helper/fs";
 import { Registry } from "../../tests/helper/registry";
+import { ERR_OOPM_DEPEND_ITSELF } from "../const";
 import { publish } from "./publish";
 
 beforeEach(async (ctx) => {
@@ -47,5 +48,13 @@ describe.sequential("publish", () => {
             "package/package/src/main.ts",
             "package/package/package.oo.yaml",
         ]));
+    });
+
+    it("should failed when depend itself", async (ctx) => {
+        const p = fixture("publish_depend_itself");
+
+        await expect(
+            publish(p, ctx.registry.endpoint, "fake_token"),
+        ).rejects.toThrow(ERR_OOPM_DEPEND_ITSELF);
     });
 });

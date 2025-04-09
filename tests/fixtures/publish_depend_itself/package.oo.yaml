@@ -1,0 +1,4 @@
+name: publish_depend_itself
+version: 0.0.2
+dependencies:
+  publish_depend_itself: 0.0.1

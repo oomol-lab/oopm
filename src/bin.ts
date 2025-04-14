@@ -29,15 +29,20 @@ program.command("publish")
         await publish(path.resolve(dir), options.registry, options.token);
     });
 
-const INSTALL_DIST_ENV = "OOPM_STORE_DIR";
+const STORE_DIR = "OOPM_STORE_DIR";
+const STORE_DIR_DESC = `The store directory, default is ${STORE_DIR} environment variable or <cwd>${path.sep}.oomol${path.sep}oopm-store`;
+const getStoreDir = (dir: string | undefined): string => {
+    return dir || process.env[STORE_DIR] || path.join(process.cwd(), ".oomol", "oopm-store");
+};
+
 program.command("install")
     .description("Install a package")
     .argument("[pkg...]", "The name of the pkg to be installed or the local address.", "")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .option("-t --token <token>", "The token")
-    .option("-d --dist-dir <distDir>", "The dist directory", `${INSTALL_DIST_ENV} environment variable or <cwd>${path.sep}.oomol${path.sep}oopm-store`)
+    .option("-d --dist-dir <distDir>", STORE_DIR_DESC)
     .action(async (pkgs, options): Promise<any> => {
-        const distDir = options.distDir || process.env[INSTALL_DIST_ENV] || path.join(process.cwd(), ".oomol", "oopm-store");
+        const distDir = getStoreDir(options.distDir);
 
         if (pkgs.length === 0) {
             return await install({
@@ -81,9 +86,9 @@ program.command("install")
 program.command("list")
     .description("List all packages")
     .argument("[dir]", "The workdir directory", ".")
-    .requiredOption("-s --search-dir <searchDir>", "The search directory")
+    .option("-s --search-dir <searchDir>", STORE_DIR_DESC)
     .action(async (dir, options) => {
-        const result = await list(path.resolve(dir), options.searchDir);
+        const result = await list(path.resolve(dir), getStoreDir(options.searchDir));
         // eslint-disable-next-line no-console
         console.log(JSON.stringify(result, null, 2));
     });
@@ -91,9 +96,9 @@ program.command("list")
 program.command("thumbnail")
     .description("Generate thumbnail for a local package")
     .argument("[dir]", "The workdir directory", ".")
-    .requiredOption("-s --search-dir <searchDir>", "The search directory")
+    .option("-s --search-dir <searchDir>", STORE_DIR_DESC)
     .action(async (dir, options) => {
-        const thumbnailPath = await thumbnail(path.resolve(dir), options.searchDir);
+        const thumbnailPath = await thumbnail(path.resolve(dir), getStoreDir(options.searchDir));
         if (thumbnailPath) {
             // eslint-disable-next-line no-console
             console.log("Thumbnail generated successfully.");

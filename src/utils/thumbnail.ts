@@ -7,7 +7,7 @@ export interface PackageThumbnail {
     description?: string;
     icon?: string;
     flows?: FlowThumbnail[];
-    blocks?: any[];
+    blocks?: BlockThumbnail[];
 }
 
 interface FlowThumbnail {
@@ -19,6 +19,18 @@ interface FlowThumbnail {
     uiData?: any;
 }
 
+interface BlockThumbnail {
+    name: string;
+    title?: string;
+    description?: string;
+    icon?: string;
+    inputHandleDefs?: InputHandleDef[];
+    outputHandleDefs?: OutputHandleDef[];
+    executorName?: string;
+    nodes?: Node[];
+    handleOutputsFrom?: HandleOutputFrom[];
+}
+
 interface NodeThumbnail {
     nodeId: string;
     type?: string;
@@ -26,6 +38,7 @@ interface NodeThumbnail {
     description?: string;
     icon?: string;
     task?: string;
+    subflow?: string;
     executorName?: string;
     valueHandleDefs?: ValueHandleDef[];
     inputHandleDefs?: InputHandleDef[];
@@ -52,12 +65,31 @@ interface ValueHandleDef extends InputHandleDef { }
 interface HandleInputFrom {
     handle: string;
     value?: any;
-    from_node?: HandleFromNode[];
+    from_subflow?: HandleFromSubflow[] | undefined;
+    from_node?: HandleFromNode[] | undefined;
+    from_slot?: HandleFromSlot[] | undefined;
+}
+
+interface HandleOutputFrom {
+    handle: string;
+    from_subflow?: HandleFromSubflow[] | undefined;
+    from_node?: HandleFromNode[] | undefined;
+    from_slot?: HandleFromSlot[] | undefined;
+}
+
+interface HandleFromSubflow {
+    input_handle: string;
 }
 
 interface HandleFromNode {
     node_id: string;
     output_handle: string;
+}
+
+interface HandleFromSlot {
+    subflow_node_id: string;
+    slot_node_id: string;
+    input_handle: string;
 }
 
 interface TaskOOYaml {
@@ -70,6 +102,18 @@ interface TaskOOYaml {
     icon?: string;
     executor: Executor;
     additional_inputs?: boolean;
+}
+
+interface SubflowOOYaml {
+    inputs_def?: InputHandleDef[];
+    outputs_def?: OutputHandleDef[];
+    render?: string;
+    ui?: any;
+    title?: string;
+    description?: string;
+    icon?: string;
+    nodes: Node[];
+    outputs_from?: HandleOutputFrom[];
 }
 
 interface Executor { name: string; options?: { entry?: string } }
@@ -92,8 +136,6 @@ interface FlowOOYaml {
 
 interface Node {
     node_id: string;
-    flow?: any;
-    slot?: any;
     ignore?: boolean;
     title?: string;
     description?: string;
@@ -101,7 +143,10 @@ interface Node {
     timeout?: number;
     inputs_from?: HandleInputFrom[];
     concurrency?: number;
-    task: string | InlineTaskBlock;
+    task?: string | InlineTaskBlock;
+    subflow?: string;
+    slots?: any;
+    /** additional input defs */
     inputs_def?: InputHandleDef[];
 }
 
@@ -117,11 +162,13 @@ type ProviderResult<T> = T | undefined | null | Promise<T | undefined | null>;
 
 interface FlowEntry { id: string; path: string; yaml: FlowOOYaml; uiData: any }
 interface TaskEntry { package: string; id: string; path: string; yaml: TaskOOYaml }
+interface SubflowEntry { package: string; id: string; path: string; yaml: SubflowOOYaml }
 
 interface WorkspaceProvider {
     provideWorkspace: () => ProviderResult<PackageOOYaml>;
     provideFlows: () => ProviderResult<FlowEntry[]>;
     provideTask: (identifier: string) => ProviderResult<TaskEntry>;
+    provideSubflow: (identifier: string) => ProviderResult<SubflowEntry>;
 }
 
 interface ThumbnailProvider {
@@ -138,6 +185,7 @@ interface PackageOOYaml {
 
 const flowOOYaml = "flow.oo.yaml";
 const taskOOYaml = "task.oo.yaml";
+const subflowOOYaml = "subflow.oo.yaml";
 const flowUIOOJson = ".flow.ui.oo.json";
 const packageOOYaml = "package.oo.yaml";
 const assetsBaseUrl = "https://package-assets.oomol.com/packages/";
@@ -218,21 +266,54 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
     async provideTask(identifier: string): Promise<TaskEntry | undefined> {
         const pkg = await this.provideWorkspace();
         const [dep, task] = identifier.split("::");
-        const version = pkg.dependencies?.[dep];
-        if (dep && task && version) {
-            const pkgDir = path.join(this.storeDir, `${dep}-${version}`);
-            const file = path.join(pkgDir, "tasks", task, taskOOYaml);
-            if (await isFile(file)) {
-                try {
-                    return {
-                        package: dep,
-                        id: task,
-                        path: file,
-                        yaml: YAML.parse((await readFile(file))!),
-                    };
-                }
-                catch { }
+        let file: string | undefined;
+        if (dep === "self" && task) {
+            file = path.join(this.workspaceDir, "tasks", task, taskOOYaml);
+        }
+        else {
+            const version = pkg.dependencies?.[dep];
+            if (dep && task && version) {
+                const pkgDir = path.join(this.storeDir, `${dep}-${version}`);
+                file = path.join(pkgDir, "tasks", task, taskOOYaml);
             }
+        }
+        if (file && await isFile(file)) {
+            try {
+                return {
+                    package: dep,
+                    id: task,
+                    path: file,
+                    yaml: YAML.parse((await readFile(file))!),
+                };
+            }
+            catch { }
+        }
+    }
+
+    async provideSubflow(identifier: string): Promise<SubflowEntry | undefined> {
+        const pkg = await this.provideWorkspace();
+        const [dep, subflow] = identifier.split("::");
+        let file: string | undefined;
+        if (dep === "self" && subflow) {
+            file = path.join(this.workspaceDir, "subflows", subflow, subflowOOYaml);
+        }
+        else {
+            const version = pkg.dependencies?.[dep];
+            if (dep && subflow && version) {
+                const pkgDir = path.join(this.storeDir, `${dep}-${version}`);
+                file = path.join(pkgDir, "subflows", subflow, subflowOOYaml);
+            }
+        }
+        if (file && await isFile(file)) {
+            try {
+                return {
+                    package: dep,
+                    id: subflow,
+                    path: file,
+                    yaml: YAML.parse((await readFile(file))!),
+                };
+            }
+            catch { }
         }
     }
 
@@ -252,7 +333,56 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 result.flows!.push(flow);
             }
         }
+        const rawTasks = await this._listTasks();
+        for (const name of rawTasks) {
+            const task = await this.provideTask(`self::${name}`);
+            if (task) {
+                result.blocks!.push({
+                    name: task.id,
+                    title: task.yaml.title,
+                    description: task.yaml.description,
+                    icon: task.yaml.icon,
+                    inputHandleDefs: task.yaml.inputs_def,
+                    outputHandleDefs: task.yaml.outputs_def,
+                    executorName: task.yaml.executor.name,
+                });
+            }
+        }
+        const rawSubflows = await this._listSubflows();
+        for (const name of rawSubflows) {
+            const subflow = await this.provideSubflow(`self::${name}`);
+            if (subflow) {
+                result.blocks!.push({
+                    name: subflow.id,
+                    title: subflow.yaml.title,
+                    description: subflow.yaml.description,
+                    icon: subflow.yaml.icon,
+                    inputHandleDefs: subflow.yaml.inputs_def,
+                    outputHandleDefs: subflow.yaml.outputs_def,
+                    nodes: subflow.yaml.nodes,
+                    handleOutputsFrom: subflow.yaml.outputs_from,
+                });
+            }
+        }
         return result;
+    }
+
+    private async _listTasks(): Promise<string[]> {
+        try {
+            return await fs.readdir(path.join(this.workspaceDir, "tasks"));
+        }
+        catch {
+            return [];
+        }
+    }
+
+    private async _listSubflows(): Promise<string[]> {
+        try {
+            return await fs.readdir(path.join(this.workspaceDir, "subflows"));
+        }
+        catch {
+            return [];
+        }
     }
 
     private async _getFlowThumbnail(raw: FlowEntry): Promise<FlowThumbnail | undefined> {
@@ -284,10 +414,6 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
             node.type = NODE_TYPE.ValueNode;
             node.valueHandleDefs = raw.values;
         }
-        else if (raw.flow || raw.slot) {
-            // Not implemented.
-            node.type = NODE_TYPE.ErrorNode;
-        }
         else if (typeof raw.task === "string") {
             node.type = NODE_TYPE.TaskNode;
             node.task = raw.task;
@@ -313,13 +439,32 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
             node.type = NODE_TYPE.TaskNode;
             node.icon = executorIcon(raw.task.executor);
             node.executorName = raw.task.executor.name;
-            node.inputHandleDefs = raw.inputs_def;
+            node.inputHandleDefs = raw.task.inputs_def;
             node.outputHandleDefs = raw.task.outputs_def;
+            node.handleInputsFrom = raw.inputs_from;
+        }
+        else if (typeof raw.subflow === "string") {
+            node.type = NODE_TYPE.SubflowNode;
+            node.subflow = raw.subflow;
+            const subflow = await this.provideSubflow(raw.subflow);
+            if (subflow) {
+                node.icon = await this._resolveUrl(subflow.yaml.icon, subflow.path);
+                node.inputHandleDefs = subflow.yaml.inputs_def;
+                node.outputHandleDefs = subflow.yaml.outputs_def;
+            }
+            else {
+                // Guess input handle defs from inputs from.
+                node.inputHandleDefs = raw.inputs_from?.map(a => ({
+                    handle: a.handle,
+                    json_schema: this._schemaFromValue(a.value),
+                }));
+            }
             node.handleInputsFrom = raw.inputs_from;
         }
         else {
             // Not implemented.
             node.type = NODE_TYPE.ErrorNode;
+            // XXX: Guess output handle defs from other nodes' inputs from.
         }
 
         return node;

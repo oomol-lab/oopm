@@ -52,8 +52,6 @@ export async function pack(p: string, outDir: string, ignore: string[] = default
     await execa({
         cwd: workdir,
         env: env(""),
-        stdout: "inherit",
-        stderr: "inherit",
     })`npm pack --pack-destination ${outDir}`;
 
     await remove(workdir).catch(() => {});

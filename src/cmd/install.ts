@@ -249,8 +249,6 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
     await execa({
         cwd: temp,
         env: env(options.registry),
-        stdout: "inherit",
-        stderr: "inherit",
         cancelSignal: options.cancelSignal,
         forceKillAfterDelay: 1000,
     })`npm install`;

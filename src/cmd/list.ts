@@ -1,15 +1,14 @@
 import type { SearchDep } from "../types";
 import path from "node:path";
 import { exists } from "../utils/fs";
-import { generatePackageJson } from "../utils/npm";
+import { generatePackageJson, getDependencies } from "../utils/npm";
 
 type IMap = Map<`${string}-${string}`, SearchDep>;
 
 export async function list(workdir: string, searchDir: string) {
     searchDir = path.resolve(searchDir);
 
-    const meta = await generatePackageJson(workdir, false);
-    const rootDeps = meta.dependencies ?? {};
+    const rootDeps = await getDependencies(workdir);
 
     const map: IMap = new Map();
 

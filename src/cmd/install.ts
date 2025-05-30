@@ -83,7 +83,6 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
         await remove(path.join(targetDir, ooThumbnailName));
         return {
             target: targetDir,
-            meta,
             isOverwrite: isExists,
         };
     }
@@ -98,7 +97,6 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
     await copyDir(options.file, targetDir, installFilter);
     return {
         target: targetDir,
-        meta,
         isOverwrite: isExists,
     };
 }
@@ -279,7 +277,6 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
             version: dep.version,
             target,
             isAlreadyExist: true,
-            meta: await generatePackageJson(target, false),
         };
     }
 
@@ -302,7 +299,6 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
                 version: i.version,
                 target,
                 isAlreadyExist,
-                meta: await generatePackageJson(i.source, false),
             };
 
             if (!isAlreadyExist) {
@@ -336,7 +332,6 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
                     version: dep.version,
                     target,
                     isAlreadyExist: false,
-                    meta: await generatePackageJson(target, false),
                 };
 
                 return Promise.resolve();

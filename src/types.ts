@@ -12,14 +12,12 @@ export type Deps = Dep[];
 
 export interface InstallFileResult {
     target: string;
-    meta: Omit<OOPackageSchema, "scripts">;
     isOverwrite: boolean;
 }
 
 export interface InstallPackageResult {
     deps: Record<`${Dep["name"]}-${Dep["version"]}`, Dep & {
         target: string;
-        meta: Omit<OOPackageSchema, "scripts">;
         isAlreadyExist: boolean;
     }>;
     primaryDepNames: Array<`${Dep["name"]}-${Dep["version"]}`>;

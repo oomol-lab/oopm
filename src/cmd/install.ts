@@ -320,18 +320,21 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
             const searchDeps = await integrityCheck(options, tempDistDir);
             const ps = searchDeps.map(async (dep) => {
                 const fullName = `${dep.name}-${dep.version}` as const;
+                const target = path.join(options.distDir, fullName);
                 if (targets[fullName]) {
                     return;
                 }
 
-                const target = path.join(options.distDir, `${dep.name}-${dep.version}`);
-                await copyDir(dep.distDir, target, installFilter);
+                const isExists = await exists(target);
+                if (!isExists) {
+                    await copyDir(dep.distDir, target, installFilter);
+                }
 
                 targets[fullName] = {
                     name: dep.name,
                     version: dep.version,
                     target,
-                    isAlreadyExist: false,
+                    isAlreadyExist: isExists,
                 };
 
                 return Promise.resolve();

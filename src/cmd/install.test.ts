@@ -298,6 +298,7 @@ describe.sequential("install all", () => {
                 publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "g-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "h-0.0.1"), ctx.registry.endpoint, "fake-token"),
             ]);
         }
 
@@ -311,19 +312,28 @@ describe.sequential("install all", () => {
                 copyDir(path.join(localStorage, "c-0.0.1"), path.join(distDir, "c-0.0.1")),
                 copyDir(path.join(localStorage, "e-0.0.1"), path.join(distDir, "e-0.0.1")),
                 copyDir(path.join(localStorage, "f-0.0.1"), path.join(distDir, "f-0.0.1")),
+                copyDir(path.join(localStorage, "h-0.0.1"), path.join(distDir, "h-0.0.1")),
             ]);
         }
 
         // Copy `entry` to workdir
         await copyDir(path.join(p, "entry"), ctx.workdir);
 
-        await install({
+        const result = await install({
             all: true,
             token: "fake-token",
             workdir: ctx.workdir,
             distDir,
             registry: ctx.registry.endpoint,
         });
+
+        const isAlreadyExistResult = Array.from(Object.values(result.deps)).filter(dep => dep.isAlreadyExist).map(d => `${d.name}-${d.version}`);
+
+        expect(new Set(isAlreadyExistResult)).toEqual(new Set([
+            "a-0.0.1",
+            "b-0.0.1",
+            "h-0.0.1",
+        ]));
 
         const fileList = await globby(`**/${ooPackageName}`, {
             cwd: distDir,
@@ -340,6 +350,7 @@ describe.sequential("install all", () => {
             "e-0.0.1/package.oo.yaml",
             "f-0.0.1/package.oo.yaml",
             "g-0.0.1/package.oo.yaml",
+            "h-0.0.1/package.oo.yaml",
         ]));
     });
 });

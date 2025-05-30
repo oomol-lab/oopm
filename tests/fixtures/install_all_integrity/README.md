@@ -10,6 +10,7 @@ entry
             d: 0.0.2
         f: 0.0.1
             g: 0.0.1
+                h: 0.0.1
     b: 0.0.1
 ```
 
@@ -21,6 +22,7 @@ b: 0.0.1
 c: 0.0.1
 e: 0.0.1
 f: 0.0.1
+h: 0.0.1
 ```
 
 #### Remote Storage (Needs to be installed)
@@ -34,6 +36,7 @@ d: 0.0.2
 e: 0.0.1
 f: 0.0.1
 g: 0.0.1
+h: 0.0.1
 ```
 
 ### Installation Logic

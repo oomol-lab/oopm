@@ -26,5 +26,5 @@ export {
     thumbnail,
 } from "./cmd/thumbnail";
 export { ERR_OOPM_DEPEND_ITSELF, ooPackageName, ooThumbnailName } from "./const";
-export type { Dep, DepRaw, Deps, InstallAllResult, InstallFileResult, InstallPackageResult, OOPackageSchema, SearchDep } from "./types";
+export type { Dep, DepRaw, Deps, IDepMap, InstallAllResult, InstallFileResult, InstallPackageResult, OOPackageSchema, SearchDep } from "./types";
 export { transformNodeModules } from "./utils/npm";

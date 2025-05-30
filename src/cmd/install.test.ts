@@ -295,6 +295,66 @@ describe.sequential("install all", () => {
             cancelSignal: controller.signal,
         })).rejects.toThrow("This operation was aborted");
     });
+
+    it("should install missing deps when exec integrity check", async (ctx) => {
+        const p = fixture("install_all_integrity");
+
+        // publish `remote_storage` to registry
+        {
+            const remoteStorage = path.join(p, "remote_storage");
+            await Promise.all([
+                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "c-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "g-0.0.1"), ctx.registry.endpoint, "fake-token"),
+            ]);
+        }
+
+        // Copy `local_storage` to distDir
+        const distDir = await tempDir();
+        {
+            const localStorage = path.join(p, "local_storage");
+            await Promise.all([
+                copyDir(path.join(localStorage, "a-0.0.1"), path.join(distDir, "a-0.0.1")),
+                copyDir(path.join(localStorage, "b-0.0.1"), path.join(distDir, "b-0.0.1")),
+                copyDir(path.join(localStorage, "c-0.0.1"), path.join(distDir, "c-0.0.1")),
+                copyDir(path.join(localStorage, "e-0.0.1"), path.join(distDir, "e-0.0.1")),
+                copyDir(path.join(localStorage, "f-0.0.1"), path.join(distDir, "f-0.0.1")),
+            ]);
+        }
+
+        // Copy `entry` to workdir
+        await copyDir(path.join(p, "entry"), ctx.workdir);
+
+        await install({
+            all: true,
+            token: "fake-token",
+            workdir: ctx.workdir,
+            distDir,
+            registry: ctx.registry.endpoint,
+        });
+
+        const fileList = await globby(`**/${ooPackageName}`, {
+            cwd: distDir,
+            onlyFiles: true,
+            absolute: false,
+        });
+
+        expect(new Set(fileList)).toEqual(new Set([
+            "a-0.0.1/package.oo.yaml",
+            "b-0.0.1/package.oo.yaml",
+            "c-0.0.1/package.oo.yaml",
+            "d-0.0.1/package.oo.yaml",
+            "d-0.0.2/package.oo.yaml",
+            "e-0.0.1/package.oo.yaml",
+            "f-0.0.1/package.oo.yaml",
+            "g-0.0.1/package.oo.yaml",
+        ]));
+    });
 });
 
 describe.sequential("install deps", () => {
@@ -652,6 +712,68 @@ describe.sequential("install deps", () => {
             registry: ctx.registry.endpoint,
             cancelSignal: controller.signal,
         })).rejects.toThrow("This operation was aborted");
+    });
+
+    it("should install missing deps when exec integrity check in dep", async (ctx) => {
+        const p = fixture("install_deps_integrity");
+
+        // publish `remote_storage` to registry
+        {
+            const remoteStorage = path.join(p, "remote_storage");
+            await Promise.all([
+                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "c-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "d-0.0.2"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "g-0.0.1"), ctx.registry.endpoint, "fake-token"),
+            ]);
+        }
+
+        // Copy `local_storage` to distDir
+        const distDir = await tempDir();
+        {
+            const localStorage = path.join(p, "local_storage");
+            await Promise.all([
+                copyDir(path.join(localStorage, "a-0.0.1"), path.join(distDir, "a-0.0.1")),
+                copyDir(path.join(localStorage, "c-0.0.1"), path.join(distDir, "c-0.0.1")),
+                copyDir(path.join(localStorage, "e-0.0.1"), path.join(distDir, "e-0.0.1")),
+                copyDir(path.join(localStorage, "f-0.0.1"), path.join(distDir, "f-0.0.1")),
+            ]);
+        }
+
+        // Copy `entry` to workdir
+        await copyDir(path.join(p, "entry"), ctx.workdir);
+
+        await install({
+            deps: [
+                { name: "b" },
+            ],
+            save: true,
+            token: "fake-token",
+            workdir: ctx.workdir,
+            distDir,
+            registry: ctx.registry.endpoint,
+        });
+
+        const fileList = await globby(`**/${ooPackageName}`, {
+            cwd: distDir,
+            onlyFiles: true,
+            absolute: false,
+        });
+
+        expect(new Set(fileList)).toEqual(new Set([
+            "a-0.0.1/package.oo.yaml",
+            "b-0.0.1/package.oo.yaml",
+            "c-0.0.1/package.oo.yaml",
+            "d-0.0.1/package.oo.yaml",
+            "d-0.0.2/package.oo.yaml",
+            "e-0.0.1/package.oo.yaml",
+            "f-0.0.1/package.oo.yaml",
+            "g-0.0.1/package.oo.yaml",
+        ]));
     });
 });
 

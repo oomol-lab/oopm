@@ -1,7 +1,9 @@
+import type { IDepMap } from "../types";
 import fsP from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import * as tar from "tar";
+import { checkOOPackage, getDependencies } from "./npm";
 
 export async function tempDir() {
     return await fsP.mkdtemp(path.join(os.tmpdir(), "oopm-"));
@@ -86,4 +88,49 @@ export async function xTar(tarball: string) {
     await remove(path.join(temp, "package_temp"));
 
     return temp;
+}
+
+export async function walk(name: string, version: string, searchDir: string, map: IDepMap) {
+    const distDir = path.join(searchDir, `${name}-${version}`);
+
+    const isCorrect = await checkOOPackage(distDir);
+
+    if (!isCorrect) {
+        setMap(map, name, version);
+        return;
+    }
+
+    setMap(map, name, version, distDir);
+
+    // ---- search sub deps ----
+    const deps = await getDependencies(distDir);
+
+    const ps = Object.entries(deps).map(async ([name, version]) => {
+        return await walk(name, version, searchDir, map);
+    });
+
+    await Promise.all(ps);
+}
+
+function setMap(map: IDepMap, name: string, version: string, distDir?: string) {
+    const key = `${name}-${version}` as const;
+
+    if (map.has(key)) {
+        return;
+    }
+
+    if (distDir) {
+        map.set(key, {
+            name,
+            version,
+            distDir,
+        });
+    }
+    else {
+        map.set(key, {
+            name,
+            version,
+            distDir: "",
+        });
+    }
 }

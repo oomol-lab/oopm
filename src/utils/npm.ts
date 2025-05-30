@@ -59,6 +59,20 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
     }
 }
 
+export async function checkOOPackage(dir: string): Promise<boolean> {
+    const ooPackagePath = path.join(dir, ooPackageName);
+    if (!(await exists(ooPackagePath))) {
+        return false;
+    }
+    try {
+        const content = YAML.parse(await readFile(ooPackagePath)) as OOPackageSchema;
+        return !!(content.name && content.version);
+    }
+    catch (_error) {
+        return false;
+    }
+}
+
 export async function updateDependencies(dir: string, deps: Deps) {
     const ooPackagePath = path.join(dir, ooPackageName);
     if (!(await exists(ooPackagePath))) {

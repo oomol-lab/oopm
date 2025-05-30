@@ -341,9 +341,9 @@ async function integrityCheck(options: _InstallOptions): Promise<void> {
         await Promise.all(ps);
     }
 
-    const missDeps = Array.from(map.values().filter((dep) => {
+    const missDeps = Array.from(map.values()).filter((dep) => {
         return dep.distDir === "";
-    }));
+    });
 
     if (missDeps.length === 0) {
         return;

@@ -7,8 +7,8 @@ import { copyDir, exists, mkdir, move, remove, tempDir, walk, xTar } from "../ut
 import { env } from "../utils/misc";
 import {
     findLatestVersion,
-    generatePackageJson,
     getDependencies,
+    getOOPackageBasicInfo,
     initPackageJson,
     transformNodeModules,
     updateDependencies,
@@ -72,8 +72,8 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
 
     if (isTarball) {
         const tempDir = await xTar(options.file);
-        const meta = await generatePackageJson(tempDir, false);
-        const targetDir = path.join(options.distDir, `${meta.name}-${meta.version}`);
+        const { name, version } = await getOOPackageBasicInfo(tempDir);
+        const targetDir = path.join(options.distDir, `${name}-${version}`);
         const isExists = await exists(targetDir);
         if (isExists) {
             await remove(targetDir);
@@ -87,8 +87,8 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
         };
     }
 
-    const meta = await generatePackageJson(options.file, false);
-    const targetDir = path.join(options.distDir, `${meta.name}-${meta.version}`);
+    const { name, version } = await getOOPackageBasicInfo(options.file);
+    const targetDir = path.join(options.distDir, `${name}-${version}`);
     const isExists = await exists(targetDir);
     if (isExists) {
         await remove(targetDir);

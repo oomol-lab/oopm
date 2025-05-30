@@ -1,18 +1,18 @@
-import type { OOPackageSchema } from "../types";
 import { execa } from "execa";
 import { ERR_OOPM_DEPEND_ITSELF } from "../const";
 import { remove } from "../utils/fs";
 import { env } from "../utils/misc";
-import { createNpmrc, generatePackageJson } from "../utils/npm";
+import { createNpmrc, getOOPackageBasicInfo } from "../utils/npm";
 import { defaultIgnore, prePack } from "./pack";
 
-export async function publish(p: string, registry: string, token: string): Promise<OOPackageSchema> {
-    const data = await generatePackageJson(p, false);
+export async function publish(p: string, registry: string, token: string): Promise<{
+    name: string;
+    version: string;
+}> {
+    const { name, version, dependencies } = await getOOPackageBasicInfo(p);
 
-    for (const dep in data.dependencies) {
-        if (dep === data.name) {
-            throw ERR_OOPM_DEPEND_ITSELF;
-        }
+    if (dependencies[name]) {
+        throw ERR_OOPM_DEPEND_ITSELF;
     }
 
     const workdir = await prePack(p, defaultIgnore);
@@ -26,5 +26,8 @@ export async function publish(p: string, registry: string, token: string): Promi
 
     await remove(workdir).catch(() => {});
 
-    return data;
+    return {
+        name,
+        version,
+    };
 }

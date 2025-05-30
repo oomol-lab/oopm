@@ -429,25 +429,34 @@ async function installMissDep(deps: Deps, options: _InstallOptions): Promise<{
 // to
 // [[{name: a, version: 1.0.0}, {name: b, version: 1.0.0}], [{name: a, version: 2.0.0}]]
 function group(deps: Deps): Deps[] {
-    return deps.reduce((acc, dep) => {
-        for (const group of acc) {
+    const groupedDeps: Deps[] = [];
+
+    for (const dep of deps) {
+        let added = false;
+
+        for (const group of groupedDeps) {
             const foundWithName = group.find(g => g.name === dep.name);
             if (foundWithName) {
                 if (foundWithName.version === dep.version) {
                     // If the version is the same, skip adding
-                    return acc;
+                    added = true;
+                    break;
                 }
                 continue;
             }
 
             group.push(dep);
-            return acc;
+            added = true;
+            break;
         }
 
         // If the dependency is not in any group, create a new group
-        acc.push([dep]);
-        return acc;
-    }, [] as Deps[]);
+        if (!added) {
+            groupedDeps.push([dep]);
+        }
+    }
+
+    return groupedDeps;
 }
 
 if (import.meta.vitest) {

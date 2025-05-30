@@ -44,3 +44,5 @@ export interface SearchDep {
     version: string;
     distDir: string;
 }
+
+export type IDepMap = Map<`${string}-${string}`, SearchDep>;

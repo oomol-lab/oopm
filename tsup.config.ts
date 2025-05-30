@@ -5,6 +5,9 @@ export default defineConfig([
         entry: ["src/index.ts"],
         outDir: "dist",
         format: ["cjs", "esm"],
+        define: {
+            "import.meta.vitest": "undefined",
+        },
         splitting: false,
         sourcemap: false,
         clean: true,
@@ -18,6 +21,9 @@ export default defineConfig([
         format: ["esm"],
         banner: {
             js: "#!/usr/bin/env node",
+        },
+        define: {
+            "import.meta.vitest": "undefined",
         },
         splitting: false,
         sourcemap: false,

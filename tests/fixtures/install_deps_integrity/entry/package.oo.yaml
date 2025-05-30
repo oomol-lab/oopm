@@ -1,0 +1,5 @@
+name: entry
+version: 0.0.1
+dependencies:
+  a: 0.0.1
+

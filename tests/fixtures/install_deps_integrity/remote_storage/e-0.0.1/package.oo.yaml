@@ -1,0 +1,4 @@
+name: e
+version: 0.0.1
+dependencies:
+  d: 0.0.2

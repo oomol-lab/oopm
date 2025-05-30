@@ -1,8 +1,10 @@
-import type { Dep, DepRaw, Deps, InstallAllResult, InstallFileResult, InstallPackageResult } from "../types";
+import type { Dep, DepRaw, Deps, IDepMap, InstallAllResult, InstallFileResult, InstallPackageResult } from "../types";
+import fsP from "node:fs/promises";
 import path from "node:path";
 import { execa } from "execa";
+import pLimit from "p-limit";
 import { ooPackageName, ooThumbnailName } from "../const";
-import { copyDir, exists, mkdir, move, remove, tempDir, xTar } from "../utils/fs";
+import { copyDir, exists, mkdir, move, remove, tempDir, walk, xTar } from "../utils/fs";
 import { env } from "../utils/misc";
 import {
     findLatestVersion,
@@ -165,6 +167,13 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
         await Promise.all(p);
     }
 
+    // We only check deps that have not changed
+    const needCheckIntegrityDeps = Object.entries(dependencies)
+        .map(([name, version]) => ({ name, version }))
+        .filter((dep) => {
+            return !needInstall.some(n => n.name === dep.name);
+        });
+
     const deps = await _install({
         alreadyInstalled,
         needInstall,
@@ -173,6 +182,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
         distDir: options.distDir,
         token: options.token,
         registry: options.registry,
+        needCheckIntegrityDeps,
 
         cancelSignal: options.cancelSignal,
     });
@@ -220,6 +230,7 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
         distDir: options.distDir,
         token: options.token,
         registry: options.registry,
+        needCheckIntegrityDeps: Object.entries(dependencies).map(([name, version]) => ({ name, version })),
 
         cancelSignal: options.cancelSignal,
     });
@@ -238,6 +249,8 @@ interface _InstallOptions {
     alreadyInstalled: Deps;
     needInstall: Deps;
     registry: string;
+
+    needCheckIntegrityDeps: Deps;
 
     cancelSignal?: AbortSignal;
 }
@@ -306,9 +319,164 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
 
     await remove(temp);
 
+    await integrityCheck(options);
+
     return targets;
 }
 
 function installFilter(src: string, _dest: string, source: string, _destination: string): boolean {
     return path.join(src, ooThumbnailName) !== source;
+}
+
+async function integrityCheck(options: _InstallOptions): Promise<void> {
+    if (options.needCheckIntegrityDeps.length === 0) {
+        return;
+    }
+
+    const map: IDepMap = new Map();
+    {
+        const ps = options.needCheckIntegrityDeps.map(async (dep) => {
+            return await walk(dep.name, dep.version, options.distDir, map);
+        });
+        await Promise.all(ps);
+    }
+
+    const missDeps = Array.from(map.values().filter((dep) => {
+        return dep.distDir === "";
+    }));
+
+    if (missDeps.length === 0) {
+        return;
+    }
+
+    const cleanDirs: string[] = [];
+    const addedMap = new Map<`${string}-${string}`, string>();
+
+    const installLimit = pLimit(5);
+    const ps = group(missDeps).map((deps) => {
+        return installLimit(async () => {
+            const { tempDir, distDir, collectedDeps } = await installMissDep(deps, options);
+            cleanDirs.push(tempDir);
+
+            for (const i of collectedDeps) {
+                addedMap.set(`${i.name}-${i.version}`, path.join(distDir, `${i.name}-${i.version}`));
+            }
+        });
+    });
+
+    try {
+        await Promise.all(ps);
+
+        const copyLimit = pLimit(10);
+        const copyPs = Array.from(addedMap.values()).map((target) => {
+            return copyLimit(async () => {
+                await fsP.cp(target, path.join(options.distDir, path.basename(target)), {
+                    recursive: true,
+                    force: false,
+                    filter: (src, dest) => installFilter(target, options.distDir, src, dest),
+                });
+            });
+        });
+
+        await Promise.all(copyPs);
+    }
+    finally {
+        for (const dir of cleanDirs) {
+            await remove(dir).catch();
+        }
+    }
+}
+
+async function installMissDep(deps: Deps, options: _InstallOptions): Promise<{
+    tempDir: string;
+    distDir: string;
+    collectedDeps: Deps;
+}> {
+    const temp = await tempDir();
+    const distDir = path.join(temp, "oo-dist");
+    await mkdir(distDir);
+
+    await initPackageJson(temp, deps, options.registry, options.token);
+
+    await execa({
+        cwd: temp,
+        env: env(options.registry),
+        cancelSignal: options.cancelSignal,
+        forceKillAfterDelay: 1000,
+    })`npm install`;
+
+    const info = await transformNodeModules(temp);
+
+    const collectedDeps: Deps = [];
+
+    for (const i of info) {
+        const target = path.join(distDir, `${i.name}-${i.version}`);
+        await move(i.source, target);
+        collectedDeps.push({
+            name: i.name,
+            version: i.version,
+        });
+    }
+
+    return {
+        tempDir: temp,
+        distDir,
+        collectedDeps,
+    };
+}
+
+// [{name: a, version: 1.0.0}, {name: b, version: 1.0.0}, {name: a, version: 2.0.0}]
+// to
+// [[{name: a, version: 1.0.0}, {name: b, version: 1.0.0}], [{name: a, version: 2.0.0}]]
+function group(deps: Deps): Deps[] {
+    return deps.reduce((acc, dep) => {
+        for (const group of acc) {
+            const foundWithName = group.find(g => g.name === dep.name);
+            if (foundWithName) {
+                if (foundWithName.version === dep.version) {
+                    // If the version is the same, skip adding
+                    return acc;
+                }
+                continue;
+            }
+
+            group.push(dep);
+            return acc;
+        }
+
+        // If the dependency is not in any group, create a new group
+        acc.push([dep]);
+        return acc;
+    }, [] as Deps[]);
+}
+
+if (import.meta.vitest) {
+    const { it, expect } = import.meta.vitest;
+
+    it("should correctly group dependencies with group function", () => {
+        const deps = [
+            { name: "dep1", version: "1.0.0" },
+            { name: "dep2", version: "1.0.0" },
+            { name: "dep1", version: "2.0.0" },
+            { name: "dep3", version: "1.0.0" },
+            { name: "dep2", version: "2.0.0" },
+            { name: "dep3", version: "1.0.0" },
+            { name: "dep3", version: "2.0.0" },
+            { name: "dep4", version: "1.0.0" },
+        ];
+        const grouped = group(deps);
+        expect(grouped).toEqual([
+            [
+                { name: "dep1", version: "1.0.0" },
+                { name: "dep2", version: "1.0.0" },
+                { name: "dep3", version: "1.0.0" },
+                { name: "dep4", version: "1.0.0" },
+            ],
+            [
+                { name: "dep1", version: "2.0.0" },
+                { name: "dep2", version: "2.0.0" },
+                { name: "dep3", version: "2.0.0" },
+            ],
+        ]);
+    });
 }

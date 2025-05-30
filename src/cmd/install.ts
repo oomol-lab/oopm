@@ -1,5 +1,4 @@
-import type { Dep, DepRaw, Deps, IDepMap, InstallAllResult, InstallFileResult, InstallPackageResult } from "../types";
-import fsP from "node:fs/promises";
+import type { Dep, DepRaw, Deps, IDepMap, InstallAllResult, InstallFileResult, InstallPackageResult, SearchDep } from "../types";
 import path from "node:path";
 import { execa } from "execa";
 import pLimit from "p-limit";
@@ -319,7 +318,35 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
 
     await remove(temp);
 
-    await integrityCheck(options);
+    {
+        const tempDistDir = await tempDir();
+        try {
+            const searchDeps = await integrityCheck(options, tempDistDir);
+            const ps = searchDeps.map(async (dep) => {
+                const fullName = `${dep.name}-${dep.version}` as const;
+                if (targets[fullName]) {
+                    return;
+                }
+
+                const target = path.join(options.distDir, `${dep.name}-${dep.version}`);
+                await copyDir(dep.distDir, target, installFilter);
+
+                targets[fullName] = {
+                    name: dep.name,
+                    version: dep.version,
+                    target,
+                    isAlreadyExist: false,
+                    meta: await generatePackageJson(target, false),
+                };
+
+                return Promise.resolve();
+            });
+            await Promise.all(ps);
+        }
+        finally {
+            await remove(tempDistDir).catch();
+        }
+    }
 
     return targets;
 }
@@ -328,9 +355,9 @@ function installFilter(src: string, _dest: string, source: string, _destination:
     return path.join(src, ooThumbnailName) !== source;
 }
 
-async function integrityCheck(options: _InstallOptions): Promise<void> {
+async function integrityCheck(options: _InstallOptions, tempDistDir: string): Promise<SearchDep[]> {
     if (options.needCheckIntegrityDeps.length === 0) {
-        return;
+        return [];
     }
 
     const map: IDepMap = new Map();
@@ -346,11 +373,11 @@ async function integrityCheck(options: _InstallOptions): Promise<void> {
     });
 
     if (missDeps.length === 0) {
-        return;
+        return [];
     }
 
     const cleanDirs: string[] = [];
-    const addedMap = new Map<`${string}-${string}`, string>();
+    const addedMap = new Map<`${string}-${string}`, SearchDep>();
 
     const installLimit = pLimit(5);
     const ps = group(missDeps).map((deps) => {
@@ -359,32 +386,43 @@ async function integrityCheck(options: _InstallOptions): Promise<void> {
             cleanDirs.push(tempDir);
 
             for (const i of collectedDeps) {
-                addedMap.set(`${i.name}-${i.version}`, path.join(distDir, `${i.name}-${i.version}`));
+                addedMap.set(`${i.name}-${i.version}`, {
+                    name: i.name,
+                    version: i.version,
+                    distDir: path.join(distDir, `${i.name}-${i.version}`),
+                });
             }
         });
     });
 
+    let newDeps: SearchDep[] = [];
     try {
         await Promise.all(ps);
 
-        const copyLimit = pLimit(10);
-        const copyPs = Array.from(addedMap.values()).map((target) => {
-            return copyLimit(async () => {
-                await fsP.cp(target, path.join(options.distDir, path.basename(target)), {
-                    recursive: true,
-                    force: false,
-                    filter: (src, dest) => installFilter(target, options.distDir, src, dest),
-                });
+        const moveLimit = pLimit(10);
+        const movePs = Array.from(addedMap.values()).map((target) => {
+            return moveLimit(async () => {
+                const newTarget = path.join(tempDistDir, `${target.name}-${target.version}`);
+
+                await move(target.distDir, newTarget);
+
+                return {
+                    name: target.name,
+                    version: target.version,
+                    distDir: newTarget,
+                };
             });
         });
 
-        await Promise.all(copyPs);
+        newDeps = await Promise.all(movePs);
     }
     finally {
         for (const dir of cleanDirs) {
             await remove(dir).catch();
         }
     }
+
+    return newDeps;
 }
 
 async function installMissDep(deps: Deps, options: _InstallOptions): Promise<{

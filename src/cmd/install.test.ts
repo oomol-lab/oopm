@@ -717,6 +717,7 @@ describe.sequential("install deps", () => {
                 publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "g-0.0.1"), ctx.registry.endpoint, "fake-token"),
+                publish(path.join(remoteStorage, "h-0.0.1"), ctx.registry.endpoint, "fake-token"),
             ]);
         }
 
@@ -735,9 +736,10 @@ describe.sequential("install deps", () => {
         // Copy `entry` to workdir
         await copyDir(path.join(p, "entry"), ctx.workdir);
 
-        await install({
+        const result = await install({
             deps: [
                 { name: "b" },
+                { name: "h" },
             ],
             save: true,
             token: "fake-token",
@@ -745,6 +747,14 @@ describe.sequential("install deps", () => {
             distDir,
             registry: ctx.registry.endpoint,
         });
+
+        expect(new Set(Object.keys(result.deps))).toEqual(new Set([
+            "h-0.0.1",
+            "b-0.0.1",
+            "d-0.0.1",
+            "d-0.0.2",
+            "g-0.0.1",
+        ]));
 
         const fileList = await globby(`**/${ooPackageName}`, {
             cwd: distDir,
@@ -761,6 +771,7 @@ describe.sequential("install deps", () => {
             "e-0.0.1/package.oo.yaml",
             "f-0.0.1/package.oo.yaml",
             "g-0.0.1/package.oo.yaml",
+            "h-0.0.1/package.oo.yaml",
         ]));
     });
 });

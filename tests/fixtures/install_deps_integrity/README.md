@@ -10,6 +10,7 @@ entry
             d: 0.0.2
         f: 0.0.1
             g: 0.0.1
+                h: 0.0.1
 ```
 
 #### Local Storage (Already exists locally)
@@ -32,9 +33,10 @@ d: 0.0.2
 e: 0.0.1
 f: 0.0.1
 g: 0.0.1
+h: 0.0.1
 ```
 
 ### Installation Logic
 
-1. install `b:0.0.1` dependency.
-2. install missing `d:0.0.1` `d:0.0.2` `g:0.0.1` dependencies.
+1. install `b:0.0.1` `h:1.0.0` dependency.
+2. install missing `d:0.0.1` `d:0.0.2` `g:0.0.1` `h:0.0.1` dependencies.

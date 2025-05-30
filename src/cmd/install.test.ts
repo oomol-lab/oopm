@@ -5,7 +5,7 @@ import { fixture } from "../../tests/helper/fs";
 import { Registry } from "../../tests/helper/registry";
 import { ooPackageName } from "../const";
 import { copyDir, exists, remove, tempDir } from "../utils/fs";
-import { generatePackageJson } from "../utils/npm";
+import { generatePackageJson, getDependencies } from "../utils/npm";
 import { install } from "./install";
 import { publish } from "./publish";
 
@@ -416,7 +416,7 @@ describe.sequential("install deps", () => {
             },
         });
 
-        const deps = (await generatePackageJson(ctx.workdir, false)).dependencies;
+        const deps = (await getDependencies(ctx.workdir));
         expect(deps).toEqual({
             a: "0.0.1",
             b: "0.0.2",
@@ -498,7 +498,7 @@ describe.sequential("install deps", () => {
             },
         });
 
-        const deps = (await generatePackageJson(ctx.workdir, false)).dependencies;
+        const deps = (await getDependencies(ctx.workdir));
         expect(deps).toEqual({
             a: "0.0.2",
             b: "0.0.1",
@@ -636,7 +636,7 @@ describe.sequential("install deps", () => {
             "b-0.0.1/package.oo.yaml",
         ]));
 
-        expect(await generatePackageJson(workdir, false)).toEqual({
+        expect(JSON.parse(await generatePackageJson(workdir))).toStrictEqual({
             name: path.basename(workdir),
             version: "0.0.1",
             files: expect.any(Array),

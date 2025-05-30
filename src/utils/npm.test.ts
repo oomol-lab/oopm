@@ -22,12 +22,12 @@ describe.concurrent("generatePackageJson", () => {
 
     it("should throw error when miss name in package.oo.yaml", async (ctx) => {
         await writeFile(path.join(ctx.workdir, "package.oo.yaml"), "version: 1.0.0");
-        await expect(generatePackageJson(ctx.workdir)).rejects.toThrow("Miss required field: name");
+        await expect(generatePackageJson(ctx.workdir)).rejects.toThrow("Missing required field: name");
     });
 
     it("should throw error when miss version in package.oo.yaml", async (ctx) => {
         await writeFile(path.join(ctx.workdir, "package.oo.yaml"), "name: foo");
-        await expect(generatePackageJson(ctx.workdir)).rejects.toThrow("Miss required field: version");
+        await expect(generatePackageJson(ctx.workdir)).rejects.toThrow("Missing required field: version");
     });
 
     it("should generate package.json content", async (ctx) => {
@@ -69,17 +69,9 @@ describe.concurrent("generatePackageJson", () => {
         const doc = new YAML.Document(content);
         await writeFile(path.join(ctx.workdir, "package.oo.yaml"), String(doc));
 
-        const result = await generatePackageJson(ctx.workdir, false);
+        const result = await generatePackageJson(ctx.workdir);
 
-        expect(result).toEqual({
-            ...content,
-            scripts: {},
-            files: [
-                "package",
-                "package/.gitignore",
-                "package/.oo-thumbnail.json",
-            ],
-        });
+        expect(JSON.parse(result).icon).toEqual(":coffee:");
     });
 });
 

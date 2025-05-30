@@ -19,10 +19,7 @@ export async function getDependencies(dir?: string): Promise<Record<string, stri
     return content.dependencies ?? {};
 }
 
-export async function generatePackageJson(dir: string, stringify: true): Promise<string>;
-export async function generatePackageJson(dir: string): Promise<string>;
-export async function generatePackageJson(dir: string, stringify: false): Promise<OOPackageSchema>;
-export async function generatePackageJson(dir: string, stringify = true): Promise<string | OOPackageSchema> {
+export async function generatePackageJson(dir: string): Promise<string> {
     const ooPackagePath = path.join(dir, ooPackageName);
 
     if (!await exists(ooPackagePath)) {
@@ -32,11 +29,11 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
     const content = YAML.parse(await readFile(ooPackagePath)) as OOPackageSchema;
 
     if (!content?.name) {
-        throw new Error(`Miss required field: name in ${ooPackagePath}`);
+        throw new Error(`Missing required field: name in ${ooPackagePath}`);
     }
 
     if (!content?.version) {
-        throw new Error(`Miss required field: version in ${ooPackagePath}`);
+        throw new Error(`Missing required field: version in ${ooPackagePath}`);
     }
 
     if (content.icon?.startsWith("./")) {
@@ -51,12 +48,30 @@ export async function generatePackageJson(dir: string, stringify = true): Promis
         "package/.oo-thumbnail.json",
     ];
 
-    if (stringify) {
-        return JSON.stringify(content, null, 2);
+    return JSON.stringify(content, null, 2);
+}
+
+export async function getOOPackageBasicInfo(dir: string): Promise<{
+    name: string;
+    version: string;
+    dependencies: Record<string, string>;
+}> {
+    const ooPackagePath = path.join(dir, ooPackageName);
+    const content = YAML.parse(await readFile(ooPackagePath)) as OOPackageSchema;
+
+    if (!content?.name) {
+        throw new Error(`Missing required field: name in ${ooPackagePath}`);
     }
-    else {
-        return content;
+
+    if (!content?.version) {
+        throw new Error(`Missing required field: version in ${ooPackagePath}`);
     }
+
+    return {
+        name: content.name,
+        version: content.version,
+        dependencies: content.dependencies ?? {},
+    };
 }
 
 export async function checkOOPackage(dir: string): Promise<boolean> {
@@ -169,7 +184,7 @@ export async function transformNodeModules(dir: string) {
         })
         .map(async (p) => {
             const source = path.dirname(p);
-            const { name, version } = await generatePackageJson(source, false);
+            const { name, version } = await getOOPackageBasicInfo(source);
 
             map.set(`${name}-${version}`, {
                 source,

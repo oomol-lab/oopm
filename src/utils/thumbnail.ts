@@ -45,7 +45,23 @@ interface NodeThumbnail {
     additionalInputs?: boolean;
     additionalInputDefs?: InputHandleDef[];
     outputHandleDefs?: OutputHandleDef[];
+    slots?: SlotProvider[];
+    slotNodeDefs?: SlotNodeDef[];
     handleInputsFrom?: HandleInputFrom[];
+}
+
+interface SlotNodeDef {
+    slot_node_id: string;
+    title?: string;
+    icon?: string;
+    description?: string;
+}
+
+interface SlotProvider {
+    slot_node_id: string;
+    slotflow?: string;
+    subflow?: string;
+    task?: string;
 }
 
 interface OutputHandleDef {
@@ -138,16 +154,26 @@ interface Node {
     node_id: string;
     ignore?: boolean;
     title?: string;
+    icon?: string;
     description?: string;
     values?: ValueHandleDef[];
     timeout?: number;
     inputs_from?: HandleInputFrom[];
     concurrency?: number;
+
     task?: string | InlineTaskBlock;
-    subflow?: string;
-    slots?: any;
-    /** additional input defs */
+    /** additional input defs, only when 'task' is string */
     inputs_def?: InputHandleDef[];
+
+    subflow?: string;
+    slots?: SlotProvider[];
+
+    slot?: InlineSlotBlock;
+}
+
+interface InlineSlotBlock {
+    inputs_def?: InputHandleDef[] | undefined;
+    outputs_def?: OutputHandleDef[] | undefined;
 }
 
 interface InlineTaskBlock {
@@ -388,7 +414,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
     private async _getFlowThumbnail(raw: FlowEntry): Promise<FlowThumbnail | undefined> {
         const nodes: NodeThumbnail[] = [];
         for (const nodeManifest of raw.yaml.nodes) {
-            const node = await this._getNodeThumbnail(nodeManifest);
+            const node = await this._getNodeThumbnail(nodeManifest, raw.path);
             if (node) {
                 nodes.push(node);
             }
@@ -403,10 +429,11 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         };
     }
 
-    private async _getNodeThumbnail(raw: Node): Promise<NodeThumbnail | undefined> {
+    private async _getNodeThumbnail(raw: Node, manifestPath: string): Promise<NodeThumbnail | undefined> {
         const node: NodeThumbnail = {
             nodeId: raw.node_id,
             title: raw.title,
+            icon: await this._resolveUrl(raw.icon, manifestPath),
             description: raw.description,
         };
 
@@ -451,6 +478,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 node.icon = await this._resolveUrl(subflow.yaml.icon, subflow.path);
                 node.inputHandleDefs = subflow.yaml.inputs_def;
                 node.outputHandleDefs = subflow.yaml.outputs_def;
+                node.slotNodeDefs = await this._getSlotNodeDefs(subflow);
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -459,6 +487,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                     json_schema: this._schemaFromValue(a.value),
                 }));
             }
+            node.slots = raw.slots;
             node.handleInputsFrom = raw.inputs_from;
         }
         else {
@@ -468,6 +497,24 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         }
 
         return node;
+    }
+
+    private async _getSlotNodeDefs(subflow: SubflowEntry | undefined): Promise<SlotNodeDef[] | undefined> {
+        if (!subflow) {
+            return;
+        }
+        const slotNodeDefs: SlotNodeDef[] = [];
+        for (const node of subflow.yaml.nodes) {
+            if (node.slot) {
+                slotNodeDefs.push({
+                    slot_node_id: node.node_id,
+                    title: node.title,
+                    icon: await this._resolveUrl(node.icon, subflow.path),
+                    description: node.description,
+                });
+            }
+        }
+        return slotNodeDefs;
     }
 
     private _schemaFromValue(value: any): any {

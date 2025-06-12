@@ -25,6 +25,7 @@ export interface InstallAllOptions extends InstallBasicOptions {
     workdir: string;
     token?: string;
     registry: string;
+    searchDirs: string[];
 }
 
 export interface InstallFileOptions extends InstallBasicOptions {
@@ -37,6 +38,7 @@ export interface InstallPackageOptions extends InstallBasicOptions {
     token?: string;
     save: boolean;
     registry: string;
+    searchDirs: string[];
 }
 
 export type InstallOptions = InstallAllOptions | InstallFileOptions | InstallPackageOptions;
@@ -182,6 +184,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
         needCheckIntegrityDeps,
 
         cancelSignal: options.cancelSignal,
+        searchDirs: options.searchDirs,
     });
 
     return {
@@ -230,6 +233,7 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
         needCheckIntegrityDeps: Object.entries(dependencies).map(([name, version]) => ({ name, version })),
 
         cancelSignal: options.cancelSignal,
+        searchDirs: options.searchDirs,
     });
 
     return {
@@ -250,6 +254,8 @@ interface _InstallOptions {
     needCheckIntegrityDeps: Deps;
 
     cancelSignal?: AbortSignal;
+
+    searchDirs: string[];
 }
 
 async function _install(options: _InstallOptions): Promise<InstallPackageResult["deps"]> {
@@ -361,7 +367,7 @@ async function integrityCheck(options: _InstallOptions, tempDistDir: string): Pr
     const map: IDepMap = new Map();
     {
         const ps = options.needCheckIntegrityDeps.map(async (dep) => {
-            return await walk(dep.name, dep.version, options.distDir, map);
+            return await walk(dep.name, dep.version, [options.distDir, ...options.searchDirs], map);
         });
         await Promise.all(ps);
     }

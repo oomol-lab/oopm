@@ -10,8 +10,9 @@ describe("list", () => {
 
         const entryDir = path.join(p, "entry");
         const localDir = path.join(p, "local_storage");
+        const localDir2 = path.join(p, "local_storage_2");
 
-        const result = await list(entryDir, localDir);
+        const result = await list(entryDir, [localDir, localDir2]);
 
         expect(result.length).toBe(14);
 
@@ -83,17 +84,17 @@ describe("list", () => {
                 {
                     name: "c1",
                     version: "0.0.1",
-                    distDir: expect.any(String),
+                    distDir: "",
                 },
                 {
                     name: "c2",
                     version: "0.0.2",
-                    distDir: expect.any(String),
+                    distDir: "",
                 },
                 {
                     name: "c3",
                     version: "0.0.2",
-                    distDir: expect.any(String),
+                    distDir: path.join(localDir2, "c3-0.0.2"),
                 },
                 {
                     name: "c4",

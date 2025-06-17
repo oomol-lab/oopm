@@ -90,23 +90,30 @@ export async function xTar(tarball: string) {
     return temp;
 }
 
-export async function walk(name: string, version: string, searchDir: string, map: IDepMap) {
-    const distDir = path.join(searchDir, `${name}-${version}`);
+export async function walk(name: string, version: string, searchDirs: string[], map: IDepMap) {
+    let distDir = "";
+    for (const searchDir of searchDirs) {
+        distDir = path.join(searchDir, `${name}-${version}`);
 
-    const isCorrect = await checkOOPackage(distDir);
+        const isCorrect = await checkOOPackage(distDir);
+        if (isCorrect) {
+            break;
+        }
 
-    if (!isCorrect) {
-        setMap(map, name, version);
-        return;
+        distDir = "";
     }
 
     setMap(map, name, version, distDir);
+
+    if (distDir === "") {
+        return;
+    }
 
     // ---- search sub deps ----
     const deps = await getDependencies(distDir);
 
     const ps = Object.entries(deps).map(async ([name, version]) => {
-        return await walk(name, version, searchDir, map);
+        return await walk(name, version, searchDirs, map);
     });
 
     await Promise.all(ps);

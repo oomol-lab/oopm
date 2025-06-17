@@ -151,6 +151,7 @@ describe.sequential("install all", () => {
             workdir: ctx.workdir,
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         expect(new Set(result.primaryDepNames)).toEqual(new Set([
@@ -280,6 +281,7 @@ describe.sequential("install all", () => {
             distDir,
             registry: ctx.registry.endpoint,
             cancelSignal: controller.signal,
+            searchDirs: [],
         })).rejects.toThrow("This operation was aborted");
     });
 
@@ -325,6 +327,7 @@ describe.sequential("install all", () => {
             workdir: ctx.workdir,
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         const isAlreadyExistResult = Array.from(Object.values(result.deps)).filter(dep => dep.isAlreadyExist).map(d => `${d.name}-${d.version}`);
@@ -392,6 +395,7 @@ describe.sequential("install deps", () => {
             workdir: ctx.workdir,
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         expect(new Set(result.primaryDepNames)).toEqual(new Set([
@@ -487,6 +491,7 @@ describe.sequential("install deps", () => {
             workdir: ctx.workdir,
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         expect(new Set(result.primaryDepNames)).toEqual(new Set([
@@ -553,6 +558,7 @@ describe.sequential("install deps", () => {
             token: "fake-token",
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         expect(new Set(result.primaryDepNames)).toEqual(new Set([
@@ -614,6 +620,7 @@ describe.sequential("install deps", () => {
             workdir,
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         expect(new Set(result.primaryDepNames)).toEqual(new Set([
@@ -699,6 +706,7 @@ describe.sequential("install deps", () => {
             distDir,
             registry: ctx.registry.endpoint,
             cancelSignal: controller.signal,
+            searchDirs: [],
         })).rejects.toThrow("This operation was aborted");
     });
 
@@ -746,6 +754,7 @@ describe.sequential("install deps", () => {
             workdir: ctx.workdir,
             distDir,
             registry: ctx.registry.endpoint,
+            searchDirs: [],
         });
 
         expect(new Set(Object.keys(result.deps))).toEqual(new Set([

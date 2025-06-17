@@ -41,6 +41,7 @@ program.command("install")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .option("-t --token <token>", "The token")
     .option("-d --dist-dir <distDir>", STORE_DIR_DESC)
+    .option("-s --search-dir <searchDir...>", undefined, [])
     .action(async (pkgs, options): Promise<any> => {
         const distDir = getStoreDir(options.distDir);
 
@@ -51,6 +52,7 @@ program.command("install")
                 distDir,
                 registry: options.registry,
                 token: options.token,
+                searchDirs: options.searchDir,
             });
         }
 
@@ -80,15 +82,16 @@ program.command("install")
             distDir,
             registry: options.registry,
             token: options.token,
+            searchDirs: options.searchDir,
         });
     });
 
 program.command("list")
     .description("List all packages")
     .argument("[dir]", "The workdir directory", ".")
-    .option("-s --search-dir <searchDir>", STORE_DIR_DESC)
+    .option("-s --search-dir <searchDir...>", STORE_DIR_DESC, [])
     .action(async (dir, options) => {
-        const result = await list(path.resolve(dir), getStoreDir(options.searchDir));
+        const result = await list(path.resolve(dir), options.searchDir);
         // eslint-disable-next-line no-console
         console.log(JSON.stringify(result, null, 2));
     });

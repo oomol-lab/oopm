@@ -113,31 +113,6 @@ interface HandleFromSlot {
     input_handle: string;
 }
 
-interface TaskOOYaml {
-    inputs_def?: InputHandleDef[];
-    outputs_def?: OutputHandleDef[];
-    render?: string;
-    ui?: any;
-    title?: string;
-    description?: string;
-    icon?: string;
-    executor: Executor;
-    additional_inputs?: boolean;
-    additional_outputs?: boolean;
-}
-
-interface SubflowOOYaml {
-    inputs_def?: InputHandleDef[];
-    outputs_def?: OutputHandleDef[];
-    render?: string;
-    ui?: any;
-    title?: string;
-    description?: string;
-    icon?: string;
-    nodes: Node[];
-    outputs_from?: HandleOutputFrom[];
-}
-
 interface Executor { name: string; options?: { entry?: string } }
 
 const executorIcon = (executor: Executor): string | undefined => {
@@ -148,13 +123,6 @@ const executorIcon = (executor: Executor): string | undefined => {
         return executor.options?.entry?.endsWith(".ts") ? ":skill-icons:typescript:" : ":skill-icons:javascript:";
     }
 };
-
-interface FlowOOYaml {
-    title?: string;
-    description?: string;
-    icon?: string;
-    nodes: Node[];
-}
 
 interface Node {
     node_id: string;
@@ -198,14 +166,6 @@ interface ThumbnailProvider {
     provideThumbnail: () => ProviderResult<PackageThumbnail>;
 }
 
-interface PackageOOYaml {
-    name?: string;
-    version?: string;
-    description?: string;
-    icon?: string;
-    dependencies?: { [pkg: string]: string };
-}
-
 const flowUIOOJson = ".flow.ui.oo.json";
 const assetsBaseUrl = "https://package-assets.oomol.com/packages/";
 
@@ -237,15 +197,16 @@ const readFile = async (path: string): Promise<string | undefined> => {
 
 export class Thumbnail implements ThumbnailProvider {
     public static async create(workspaceDir: string, registryStoreDir: string): Promise<Thumbnail | undefined> {
-        const depsQuery = new DepsQuery(registryStoreDir)
+        const depsQuery = new DepsQuery(registryStoreDir);
         const wsPkgData = await PkgData.createWS(
-            depsQuery, workspaceDir
-        )
+            depsQuery,
+            workspaceDir,
+        );
         if (wsPkgData) {
-            return new Thumbnail(wsPkgData)
+            return new Thumbnail(wsPkgData);
         }
     }
-    
+
     private constructor(
         private readonly wsPkgData: PkgData,
     ) {}
@@ -257,7 +218,7 @@ export class Thumbnail implements ThumbnailProvider {
             description: this.wsPkgData.description,
             flows: await this._provideFlowsThumbnail(),
         };
-        
+
         const rawTasks = await this._listTasks();
         for (const name of rawTasks) {
             const taskData = await this.wsPkgData.getSharedBlockByName("task", name);
@@ -309,15 +270,15 @@ export class Thumbnail implements ThumbnailProvider {
             return [];
         }
     }
-    
+
     private async _provideFlowsThumbnail(): Promise<FlowThumbnail[]> {
-        const result: FlowThumbnail[] = []
+        const result: FlowThumbnail[] = [];
         const flowsDir = path.join(this.wsPkgData.packageDir, "flows");
         const flowNames = await fs.readdir(flowsDir);
         for (const flowName of flowNames) {
             const flowData = await FlowLikeData.create(this.wsPkgData, flowName, path.join(flowsDir, flowName), "flow");
             if (flowData) {
-                const flowThumbnail = await this._getFlowThumbnail(flowData)
+                const flowThumbnail = await this._getFlowThumbnail(flowData);
                 if (flowThumbnail) {
                     result.push(flowThumbnail);
                 }
@@ -458,7 +419,7 @@ export class Thumbnail implements ThumbnailProvider {
 
 class DepsQuery {
     private cache: Map<string, PkgData | null | Promise<PkgData | undefined>> = new Map();
-    
+
     public constructor(public readonly searchPath: string) {}
 
     public async getPkgData(packageName: string, packageVersion: string): Promise<PkgData | undefined> {
@@ -476,7 +437,7 @@ class DepsQuery {
         this.cache.set(packageId, p);
         const pkgData = await p;
         this.cache.set(packageId, pkgData || null);
-        return pkgData
+        return pkgData;
     }
 }
 
@@ -490,7 +451,7 @@ class PkgData {
             }
         }
     }
-    
+
     public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string): Promise<PkgData | undefined> {
         const packagePath = await resolveManifest(packageDir, "package");
         if (packagePath) {
@@ -500,8 +461,8 @@ class PkgData {
             }
         }
     }
-    
-    public readonly searchPath: string
+
+    public readonly searchPath: string;
 
     public readonly title: string | undefined;
     public readonly description: string | undefined;
@@ -537,9 +498,9 @@ class PkgData {
         if (uri.startsWith("https://") || uri.startsWith("http://") || uri.startsWith("data:")) {
             return uri;
         }
-        
+
         if (!uri.startsWith("/")) {
-            uri = path.join(manifestDir, uri)
+            uri = path.join(manifestDir, uri);
         }
 
         if (uri.startsWith(this.packageDir)) {
@@ -550,9 +511,9 @@ class PkgData {
             return `${assetsBaseUrl}${this.packageName}/${this.packageVersion}/files/package/${uri}`;
         }
     }
-    
-    public async resolveSharedBlock(blockType: "subflow", blockResourceName: string): Promise<SubflowBlockData | undefined>
-    public async resolveSharedBlock(blockType: SharedBlockType, blockResourceName: string): Promise<SharedBlockData | undefined>
+
+    public async resolveSharedBlock(blockType: "subflow", blockResourceName: string): Promise<SubflowBlockData | undefined>;
+    public async resolveSharedBlock(blockType: SharedBlockType, blockResourceName: string): Promise<SharedBlockData | undefined>;
     public async resolveSharedBlock(blockType: SharedBlockType, blockResourceName: string): Promise<SharedBlockData | undefined> {
         const x = blockResourceName.split("::");
         if (x.length !== 2) {
@@ -564,13 +525,13 @@ class PkgData {
         }
         const version = this.dependencies[blockPackage];
         if (version) {
-            const pkgData = await this.depsQuery.getPkgData(blockPackage, version)
+            const pkgData = await this.depsQuery.getPkgData(blockPackage, version);
             return pkgData?.getSharedBlockByName(blockType, blockName);
         }
     }
-    
-    public async getSharedBlockByName(blockType: "subflow", blockName: string): Promise<SubflowBlockData | undefined>
-    public async getSharedBlockByName(blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined>
+
+    public async getSharedBlockByName(blockType: "subflow", blockName: string): Promise<SubflowBlockData | undefined>;
+    public async getSharedBlockByName(blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined>;
     public async getSharedBlockByName(blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined> {
         if (this.sharedBlockCache.has(blockName)) {
             const sharedBlockData = await this.sharedBlockCache.get(blockName);
@@ -590,8 +551,7 @@ class PkgData {
     }
 }
 
-
-type FlowLikeType = "flow" | "task" | "subflow"
+type FlowLikeType = "flow" | "task" | "subflow";
 
 class FlowLikeData {
     public static async create(pkgData: PkgData, manifestName: string, manifestDir: string, flowLikeType: FlowLikeType): Promise<FlowLikeData | undefined> {
@@ -608,7 +568,7 @@ class FlowLikeData {
     public readonly title: string | undefined;
     public readonly description: string | undefined;
     public readonly icon: string | undefined;
-    
+
     public constructor(
         public readonly pkgData: PkgData,
         public readonly flowLikeType: FlowLikeType,
@@ -628,7 +588,7 @@ type SharedBlockType = "task" | "subflow";
 
 class SharedBlockData {
     public static async create(pkgData: PkgData, blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined> {
-        const blockDir = path.join(pkgData.packageDir, `${blockType}s`, blockName)
+        const blockDir = path.join(pkgData.packageDir, `${blockType}s`, blockName);
         const blockPath = await resolveManifest(blockDir, blockType);
         if (blockPath) {
             const data = await readManifestFile(blockPath);
@@ -637,11 +597,11 @@ class SharedBlockData {
             }
         }
     }
-    
+
     public readonly title: string | undefined;
     public readonly description: string | undefined;
     public readonly icon: string | undefined;
-    
+
     public constructor(
         public readonly pkgData: PkgData,
         public readonly blockType: SharedBlockType,
@@ -664,20 +624,20 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
             const data = await readManifestFile(flowLikePath);
             if (data) {
                 const uiData = await readJSONFile(path.join(manifestDir, flowUIOOJson));
-                return new SubflowBlockData(pkgData, 'subflow', subflowName, manifestDir, flowLikePath, data, uiData);
+                return new SubflowBlockData(pkgData, "subflow", subflowName, manifestDir, flowLikePath, data, uiData);
             }
         }
     }
-    
+
     public readonly title: string | undefined;
     public readonly description: string | undefined;
     public readonly icon: string | undefined;
-    
-    public readonly blockType: SharedBlockType
-        public readonly blockName: string
-        public readonly blockDir: string
-        public readonly blockPath: string
-    
+
+    public readonly blockType: SharedBlockType;
+    public readonly blockName: string;
+    public readonly blockDir: string;
+    public readonly blockPath: string;
+
     public constructor(
         public readonly pkgData: PkgData,
         public readonly flowLikeType: "subflow",
@@ -690,13 +650,12 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
         this.title = data.title || manifestName;
         this.description = data.description;
         this.icon = this.pkgData.resolveResourceURI(data.icon, manifestDir) || pkgData.icon;
-        this.blockType = flowLikeType
+        this.blockType = flowLikeType;
         this.blockName = manifestName;
         this.blockDir = manifestDir;
         this.blockPath = manifestPath;
     }
 }
-
 
 async function resolveManifest(dirPath: string, type: string): Promise<string | undefined> {
     let filePath = path.join(dirPath, `${type}.oo.yaml`);
@@ -733,7 +692,8 @@ async function readJSONFile(filePath: string): Promise<Record<string, any> | und
                 return data;
             }
         }
-    } catch {}
+    }
+    catch {}
 }
 
 function isPlainObject(x: unknown): x is Record<string, any> {

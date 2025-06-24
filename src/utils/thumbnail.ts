@@ -45,6 +45,8 @@ interface NodeThumbnail {
     additionalInputs?: boolean;
     additionalInputDefs?: InputHandleDef[];
     outputHandleDefs?: OutputHandleDef[];
+    additionalOutputs?: boolean;
+    additionalOutputDefs?: OutputHandleDef[];
     slots?: SlotProvider[];
     slotNodeDefs?: SlotNodeDef[];
     handleInputsFrom?: HandleInputFrom[];
@@ -55,6 +57,7 @@ interface SlotNodeDef {
     title?: string;
     icon?: string;
     description?: string;
+    inputHandleDefs?: InputHandleDef[];
 }
 
 interface SlotProvider {
@@ -62,6 +65,8 @@ interface SlotProvider {
     slotflow?: string;
     subflow?: string;
     task?: string;
+    inputs_def?: InputHandleDef[];
+    inputs_from?: HandleInputFrom[];
 }
 
 interface OutputHandleDef {
@@ -118,6 +123,7 @@ interface TaskOOYaml {
     icon?: string;
     executor: Executor;
     additional_inputs?: boolean;
+    additional_outputs?: boolean;
 }
 
 interface SubflowOOYaml {
@@ -164,6 +170,8 @@ interface Node {
     task?: string | InlineTaskBlock;
     /** additional input defs, only when 'task' is string */
     inputs_def?: InputHandleDef[];
+    /** additional output defs, only when 'task' is string */
+    outputs_def?: InputHandleDef[];
 
     subflow?: string;
     slots?: SlotProvider[];
@@ -451,6 +459,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 node.inputHandleDefs = task.yaml.inputs_def;
                 node.additionalInputs = task.yaml.additional_inputs;
                 node.outputHandleDefs = task.yaml.outputs_def;
+                node.additionalOutputs = task.yaml.additional_outputs;
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -460,6 +469,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 }));
             }
             node.additionalInputDefs = raw.inputs_def;
+            node.additionalOutputDefs = raw.outputs_def;
             node.handleInputsFrom = raw.inputs_from;
         }
         else if (raw.task) {
@@ -478,7 +488,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 node.icon = await this._resolveUrl(subflow.yaml.icon, subflow.path);
                 node.inputHandleDefs = subflow.yaml.inputs_def;
                 node.outputHandleDefs = subflow.yaml.outputs_def;
-                node.slotNodeDefs = await this._getSlotNodeDefs(subflow);
+                node.slotNodeDefs = await this._getSlotNodeDefs(subflow, raw);
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -499,7 +509,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         return node;
     }
 
-    private async _getSlotNodeDefs(subflow: SubflowEntry | undefined): Promise<SlotNodeDef[] | undefined> {
+    private async _getSlotNodeDefs(subflow: SubflowEntry | undefined, ownerNode: Node): Promise<SlotNodeDef[] | undefined> {
         if (!subflow) {
             return;
         }
@@ -511,6 +521,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                     title: node.title,
                     icon: await this._resolveUrl(node.icon, subflow.path),
                     description: node.description,
+                    inputHandleDefs: ownerNode.slots?.find(s => s.slot_node_id === node.node_id)?.inputs_def,
                 });
             }
         }

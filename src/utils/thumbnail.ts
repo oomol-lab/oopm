@@ -194,17 +194,6 @@ interface InlineTaskBlock {
 
 type ProviderResult<T> = T | undefined | null | Promise<T | undefined | null>;
 
-interface FlowEntry { id: string; path: string; yaml: FlowOOYaml; uiData: any }
-interface TaskEntry { package: string; id: string; path: string; yaml: TaskOOYaml }
-interface SubflowEntry { package: string; id: string; path: string; yaml: SubflowOOYaml }
-
-interface WorkspaceProvider {
-    provideWorkspace: () => ProviderResult<PackageOOYaml>;
-    provideFlows: () => ProviderResult<FlowEntry[]>;
-    provideTask: (identifier: string) => ProviderResult<TaskEntry>;
-    provideSubflow: (identifier: string) => ProviderResult<SubflowEntry>;
-}
-
 interface ThumbnailProvider {
     provideThumbnail: () => ProviderResult<PackageThumbnail>;
 }
@@ -217,11 +206,7 @@ interface PackageOOYaml {
     dependencies?: { [pkg: string]: string };
 }
 
-const flowOOYaml = "flow.oo.yaml";
-const taskOOYaml = "task.oo.yaml";
-const subflowOOYaml = "subflow.oo.yaml";
 const flowUIOOJson = ".flow.ui.oo.json";
-const packageOOYaml = "package.oo.yaml";
 const assetsBaseUrl = "https://package-assets.oomol.com/packages/";
 
 enum NODE_TYPE {
@@ -250,151 +235,57 @@ const readFile = async (path: string): Promise<string | undefined> => {
     catch { }
 };
 
-const jsonTryParse = (data: string | undefined): any => {
-    if (!data) {
-        return;
-    }
-    try {
-        return JSON.parse(data);
-    }
-    catch { }
-};
-
-export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
-    constructor(
-        private readonly workspaceDir: string,
-        private readonly storeDir: string,
-    ) { }
-
-    async provideFlows(): Promise<FlowEntry[] | undefined> {
-        const result: FlowEntry[] = [];
-        const flowsDir = path.join(this.workspaceDir, "flows");
-        const items = await fs.readdir(flowsDir);
-        await Promise.allSettled(items.map((name) => {
-            const file = path.join(flowsDir, name, flowOOYaml);
-            return this._readFlow(name, file, result);
-        }));
-        return result;
-    }
-
-    private async _readFlow(id: string, flowPath: string, result: FlowEntry[]) {
-        if (!await isFile(flowPath)) {
-            return;
-        }
-        const yamlContent = readFile(flowPath);
-        const jsonContent = readFile(flowPath.replace(flowOOYaml, flowUIOOJson));
-        const entry: FlowEntry = {
-            id,
-            path: flowPath,
-            yaml: YAML.parse((await yamlContent)!),
-            uiData: jsonTryParse(await jsonContent),
-        };
-        result.push(entry);
-    }
-
-    async provideWorkspace(): Promise<PackageOOYaml> {
-        const yamlContent = await readFile(path.join(this.workspaceDir, packageOOYaml));
-        return YAML.parse(yamlContent!);
-    }
-
-    async provideTask(identifier: string): Promise<TaskEntry | undefined> {
-        const pkg = await this.provideWorkspace();
-        const [dep, task] = identifier.split("::");
-        let file: string | undefined;
-        if (dep === "self" && task) {
-            file = path.join(this.workspaceDir, "tasks", task, taskOOYaml);
-        }
-        else {
-            const version = pkg.dependencies?.[dep];
-            if (dep && task && version) {
-                const pkgDir = path.join(this.storeDir, `${dep}-${version}`);
-                file = path.join(pkgDir, "tasks", task, taskOOYaml);
-            }
-        }
-        if (file && await isFile(file)) {
-            try {
-                return {
-                    package: dep,
-                    id: task,
-                    path: file,
-                    yaml: YAML.parse((await readFile(file))!),
-                };
-            }
-            catch { }
+export class Thumbnail implements ThumbnailProvider {
+    public static async create(workspaceDir: string, registryStoreDir: string): Promise<Thumbnail | undefined> {
+        const depsQuery = new DepsQuery(registryStoreDir)
+        const wsPkgData = await PkgData.createWS(
+            depsQuery, workspaceDir
+        )
+        if (wsPkgData) {
+            return new Thumbnail(wsPkgData)
         }
     }
-
-    async provideSubflow(identifier: string): Promise<SubflowEntry | undefined> {
-        const pkg = await this.provideWorkspace();
-        const [dep, subflow] = identifier.split("::");
-        let file: string | undefined;
-        if (dep === "self" && subflow) {
-            file = path.join(this.workspaceDir, "subflows", subflow, subflowOOYaml);
-        }
-        else {
-            const version = pkg.dependencies?.[dep];
-            if (dep && subflow && version) {
-                const pkgDir = path.join(this.storeDir, `${dep}-${version}`);
-                file = path.join(pkgDir, "subflows", subflow, subflowOOYaml);
-            }
-        }
-        if (file && await isFile(file)) {
-            try {
-                return {
-                    package: dep,
-                    id: subflow,
-                    path: file,
-                    yaml: YAML.parse((await readFile(file))!),
-                };
-            }
-            catch { }
-        }
-    }
+    
+    private constructor(
+        private readonly wsPkgData: PkgData,
+    ) {}
 
     async provideThumbnail(): Promise<PackageThumbnail | undefined> {
-        const pkg = await this.provideWorkspace();
         const result: PackageThumbnail = {
-            title: pkg.name,
-            icon: await this._resolveUrl(pkg.icon, path.join(this.workspaceDir, packageOOYaml)),
-            description: pkg.description,
-            flows: [],
-            blocks: [],
+            title: this.wsPkgData.packageName,
+            icon: this.wsPkgData.icon,
+            description: this.wsPkgData.description,
+            flows: await this._provideFlowsThumbnail(),
         };
-        const rawFlows = (await this.provideFlows()) || [];
-        for (const rawFlow of rawFlows) {
-            const flow = await this._getFlowThumbnail(rawFlow);
-            if (flow) {
-                result.flows!.push(flow);
-            }
-        }
+        
         const rawTasks = await this._listTasks();
         for (const name of rawTasks) {
-            const task = await this.provideTask(`self::${name}`);
-            if (task) {
-                result.blocks!.push({
-                    name: task.id,
-                    title: task.yaml.title,
-                    description: task.yaml.description,
-                    icon: task.yaml.icon,
-                    inputHandleDefs: task.yaml.inputs_def,
-                    outputHandleDefs: task.yaml.outputs_def,
-                    executorName: task.yaml.executor.name,
+            const taskData = await this.wsPkgData.getSharedBlockByName("task", name);
+            if (taskData) {
+                (result.blocks ??= []).push({
+                    name: taskData.blockName,
+                    title: taskData.title,
+                    description: taskData.description,
+                    icon: taskData.icon,
+                    inputHandleDefs: taskData.data.inputs_def,
+                    outputHandleDefs: taskData.data.outputs_def,
+                    executorName: taskData.data.executor?.name,
                 });
             }
         }
         const rawSubflows = await this._listSubflows();
         for (const name of rawSubflows) {
-            const subflow = await this.provideSubflow(`self::${name}`);
-            if (subflow) {
-                result.blocks!.push({
-                    name: subflow.id,
-                    title: subflow.yaml.title,
-                    description: subflow.yaml.description,
-                    icon: subflow.yaml.icon,
-                    inputHandleDefs: subflow.yaml.inputs_def,
-                    outputHandleDefs: subflow.yaml.outputs_def,
-                    nodes: subflow.yaml.nodes,
-                    handleOutputsFrom: subflow.yaml.outputs_from,
+            const subflowData = await this.wsPkgData.getSharedBlockByName("subflow", name);
+            if (subflowData) {
+                (result.blocks ??= []).push({
+                    name: subflowData.blockName,
+                    title: subflowData.title,
+                    description: subflowData.description,
+                    icon: subflowData.icon,
+                    inputHandleDefs: subflowData.data.inputs_def,
+                    outputHandleDefs: subflowData.data.outputs_def,
+                    nodes: subflowData.data.nodes,
+                    handleOutputsFrom: subflowData.data.outputs_from,
                 });
             }
         }
@@ -403,7 +294,7 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
 
     private async _listTasks(): Promise<string[]> {
         try {
-            return await fs.readdir(path.join(this.workspaceDir, "tasks"));
+            return await fs.readdir(path.join(this.wsPkgData.packageDir, "tasks"));
         }
         catch {
             return [];
@@ -412,36 +303,54 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
 
     private async _listSubflows(): Promise<string[]> {
         try {
-            return await fs.readdir(path.join(this.workspaceDir, "subflows"));
+            return await fs.readdir(path.join(this.wsPkgData.packageDir, "subflows"));
         }
         catch {
             return [];
         }
     }
+    
+    private async _provideFlowsThumbnail(): Promise<FlowThumbnail[]> {
+        const result: FlowThumbnail[] = []
+        const flowsDir = path.join(this.wsPkgData.packageDir, "flows");
+        const flowNames = await fs.readdir(flowsDir);
+        for (const flowName of flowNames) {
+            const flowData = await FlowLikeData.create(this.wsPkgData, flowName, path.join(flowsDir, flowName), "flow");
+            if (flowData) {
+                const flowThumbnail = await this._getFlowThumbnail(flowData)
+                if (flowThumbnail) {
+                    result.push(flowThumbnail);
+                }
+            }
+        }
+        return result;
+    }
 
-    private async _getFlowThumbnail(raw: FlowEntry): Promise<FlowThumbnail | undefined> {
+    private async _getFlowThumbnail(flowData: FlowLikeData): Promise<FlowThumbnail | undefined> {
         const nodes: NodeThumbnail[] = [];
-        for (const nodeManifest of raw.yaml.nodes) {
-            const node = await this._getNodeThumbnail(nodeManifest, raw.path);
-            if (node) {
-                nodes.push(node);
+        for (const nodeManifest of flowData.data.nodes || []) {
+            if (nodeManifest?.node_id) {
+                const node = await this._getNodeThumbnail(nodeManifest, flowData);
+                if (node) {
+                    nodes.push(node);
+                }
             }
         }
         return {
-            name: raw.id,
-            title: raw.yaml.title,
-            description: raw.yaml.description,
-            icon: await this._resolveUrl(raw.yaml.icon, raw.path),
+            name: flowData.manifestName,
+            title: flowData.title,
+            description: flowData.description,
+            icon: flowData.icon,
             nodes,
-            uiData: raw.uiData,
+            uiData: flowData.uiData,
         };
     }
 
-    private async _getNodeThumbnail(raw: Node, manifestPath: string): Promise<NodeThumbnail | undefined> {
+    private async _getNodeThumbnail(raw: Node, flowData: FlowLikeData): Promise<NodeThumbnail | undefined> {
         const node: NodeThumbnail = {
             nodeId: raw.node_id,
             title: raw.title,
-            icon: await this._resolveUrl(raw.icon, manifestPath),
+            icon: flowData.pkgData.resolveResourceURI(raw.icon, flowData.manifestDir),
             description: raw.description,
         };
 
@@ -452,14 +361,14 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         else if (typeof raw.task === "string") {
             node.type = NODE_TYPE.TaskNode;
             node.task = raw.task;
-            const task = await this.provideTask(raw.task);
-            if (task) {
-                node.icon = await this._resolveUrl(task.yaml.icon, task.path);
-                node.executorName = task.yaml.executor.name;
-                node.inputHandleDefs = task.yaml.inputs_def;
-                node.additionalInputs = task.yaml.additional_inputs;
-                node.outputHandleDefs = task.yaml.outputs_def;
-                node.additionalOutputs = task.yaml.additional_outputs;
+            const taskData = await this.wsPkgData.resolveSharedBlock("task", raw.task);
+            if (taskData) {
+                node.icon ??= taskData.icon;
+                node.executorName = taskData.data.executor?.name;
+                node.inputHandleDefs = taskData.data.inputs_def;
+                node.additionalInputs = taskData.data.additional_inputs;
+                node.outputHandleDefs = taskData.data.outputs_def;
+                node.additionalOutputs = taskData.data.additional_outputs;
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -483,12 +392,12 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         else if (typeof raw.subflow === "string") {
             node.type = NODE_TYPE.SubflowNode;
             node.subflow = raw.subflow;
-            const subflow = await this.provideSubflow(raw.subflow);
-            if (subflow) {
-                node.icon = await this._resolveUrl(subflow.yaml.icon, subflow.path);
-                node.inputHandleDefs = subflow.yaml.inputs_def;
-                node.outputHandleDefs = subflow.yaml.outputs_def;
-                node.slotNodeDefs = await this._getSlotNodeDefs(subflow, raw);
+            const subflowData = await this.wsPkgData.resolveSharedBlock("subflow", raw.subflow);
+            if (subflowData) {
+                node.icon ??= subflowData.icon;
+                node.inputHandleDefs = subflowData.data.inputs_def;
+                node.outputHandleDefs = subflowData.data.outputs_def;
+                node.slotNodeDefs = await this._getSlotNodeDefs(subflowData, raw);
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -509,17 +418,14 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
         return node;
     }
 
-    private async _getSlotNodeDefs(subflow: SubflowEntry | undefined, ownerNode: Node): Promise<SlotNodeDef[] | undefined> {
-        if (!subflow) {
-            return;
-        }
+    private async _getSlotNodeDefs(subflowData: SharedBlockData, ownerNode: Node): Promise<SlotNodeDef[] | undefined> {
         const slotNodeDefs: SlotNodeDef[] = [];
-        for (const node of subflow.yaml.nodes) {
+        for (const node of subflowData.data.nodes || []) {
             if (node.slot) {
                 slotNodeDefs.push({
                     slot_node_id: node.node_id,
                     title: node.title,
-                    icon: await this._resolveUrl(node.icon, subflow.path),
+                    icon: subflowData.pkgData.resolveResourceURI(node.icon, subflowData.blockDir),
                     description: node.description,
                     inputHandleDefs: ownerNode.slots?.find(s => s.slot_node_id === node.node_id)?.inputs_def,
                 });
@@ -548,66 +454,288 @@ export class Thumbnail implements WorkspaceProvider, ThumbnailProvider {
                 return {};
         }
     }
+}
 
-    private async _resolveUrl(p: string | undefined, manifestPath: string): Promise<string | undefined> {
-        if (!p) {
-            return;
-        }
+class DepsQuery {
+    private cache: Map<string, PkgData | null | Promise<PkgData | undefined>> = new Map();
+    
+    public constructor(public readonly searchPath: string) {}
 
-        if (p.startsWith(":") && p.endsWith(":")) {
-            return p;
-        }
-
-        if (p.startsWith("https://") || p.startsWith("http://") || p.startsWith("data:")) {
-            return p;
-        }
-
-        if (!p.startsWith("/")) {
-            const baseDir = path.dirname(manifestPath);
-            p = path.join(baseDir, p);
-        }
-
-        if (p.startsWith(this.storeDir)) {
-            p = path.relative(this.storeDir, p); // p = 'oomol-file-0.0.4/icon.png'
-        }
-        else {
-            p = path.relative(this.workspaceDir, p); // p = 'icon.png'
-            const pkg = await this.provideWorkspace();
-            if (pkg.name && pkg.version) {
-                p = `${pkg.name}-${pkg.version}/${p}`;
-            }
-            else {
+    public async getPkgData(packageName: string, packageVersion: string): Promise<PkgData | undefined> {
+        const packageId = `${packageName}-${packageVersion}`;
+        if (this.cache.has(packageId)) {
+            const pkgData = await this.cache.get(packageId);
+            if (pkgData === null) {
                 return;
             }
+            if (pkgData) {
+                return pkgData;
+            }
         }
-        p = p.replace(/\\+/g, "/");
-        if (p.startsWith("..")) {
-            // reject any path outside of its package.
+        const p = PkgData.create(this, packageName, packageVersion, path.join(this.searchPath, packageId));
+        this.cache.set(packageId, p);
+        const pkgData = await p;
+        this.cache.set(packageId, pkgData || null);
+        return pkgData
+    }
+}
+
+class PkgData {
+    public static async createWS(depsQuery: DepsQuery, workspaceDir: string): Promise<PkgData | undefined> {
+        const packagePath = await resolveManifest(workspaceDir, "package");
+        if (packagePath) {
+            const data = await readManifestFile(packagePath);
+            if (data && data.name && data.version) {
+                return new PkgData(depsQuery, data.name, data.version, workspaceDir, packagePath, data);
+            }
+        }
+    }
+    
+    public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string): Promise<PkgData | undefined> {
+        const packagePath = await resolveManifest(packageDir, "package");
+        if (packagePath) {
+            const data = readManifestFile(packagePath);
+            if (data) {
+                return new PkgData(depsQuery, packageName, packageVersion, packageDir, packagePath, data);
+            }
+        }
+    }
+    
+    public readonly searchPath: string
+
+    public readonly title: string | undefined;
+    public readonly description: string | undefined;
+    public readonly icon: string | undefined;
+
+    private readonly dependencies: Record<string, string>;
+    private readonly sharedBlockCache: Map<string, SharedBlockData | null | Promise<SharedBlockData | undefined>> = new Map();
+
+    private constructor(
+        public readonly depsQuery: DepsQuery,
+        public readonly packageName: string,
+        public readonly packageVersion: string,
+        public readonly packageDir: string,
+        public readonly packagePath: string,
+        public readonly data: Record<string, any>,
+    ) {
+        this.searchPath = depsQuery.searchPath;
+        this.icon = this.resolveResourceURI(data.icon, packageDir);
+        this.title = data.title || data.name;
+        this.description = data.description;
+        this.dependencies = isPlainObject(data.dependencies) ? data.dependencies : {};
+    }
+
+    public resolveResourceURI(uri: string | undefined, manifestDir: string): string | undefined {
+        if (!uri) {
             return;
         }
 
-        const [pkg, version, file] = this._splitPath(p);
-        if (!file) {
+        if (uri.startsWith(":") && uri.endsWith(":")) {
+            return uri;
+        }
+
+        if (uri.startsWith("https://") || uri.startsWith("http://") || uri.startsWith("data:")) {
+            return uri;
+        }
+        
+        if (!uri.startsWith("/")) {
+            uri = path.join(manifestDir, uri)
+        }
+
+        if (uri.startsWith(this.packageDir)) {
+            uri = path.relative(this.packageDir, uri);
+        }
+
+        if (!uri.startsWith("/")) {
+            return `${assetsBaseUrl}${this.packageName}/${this.packageVersion}/files/package/${uri}`;
+        }
+    }
+    
+    public async resolveSharedBlock(blockType: "subflow", blockResourceName: string): Promise<SubflowBlockData | undefined>
+    public async resolveSharedBlock(blockType: SharedBlockType, blockResourceName: string): Promise<SharedBlockData | undefined>
+    public async resolveSharedBlock(blockType: SharedBlockType, blockResourceName: string): Promise<SharedBlockData | undefined> {
+        const x = blockResourceName.split("::");
+        if (x.length !== 2) {
             return;
         }
+        const [blockPackage, blockName] = x;
+        if (blockPackage === "self") {
+            return this.getSharedBlockByName(blockType, blockName);
+        }
+        const version = this.dependencies[blockPackage];
+        if (version) {
+            const pkgData = await this.depsQuery.getPkgData(blockPackage, version)
+            return pkgData?.getSharedBlockByName(blockType, blockName);
+        }
+    }
+    
+    public async getSharedBlockByName(blockType: "subflow", blockName: string): Promise<SubflowBlockData | undefined>
+    public async getSharedBlockByName(blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined>
+    public async getSharedBlockByName(blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined> {
+        if (this.sharedBlockCache.has(blockName)) {
+            const sharedBlockData = await this.sharedBlockCache.get(blockName);
+            if (sharedBlockData === null) {
+                return;
+            }
+            if (sharedBlockData) {
+                return sharedBlockData;
+            }
+        }
 
-        return `${assetsBaseUrl}${pkg}/${version}/files/package/${file}`;
+        const p = blockType === "subflow" ? SubflowBlockData.create(this, blockName) : SharedBlockData.create(this, blockType, blockName);
+        this.sharedBlockCache.set(blockName, p);
+        const sharedBlockData = await p;
+        this.sharedBlockCache.set(blockName, sharedBlockData || null);
+        return sharedBlockData;
+    }
+}
+
+
+type FlowLikeType = "flow" | "task" | "subflow"
+
+class FlowLikeData {
+    public static async create(pkgData: PkgData, manifestName: string, manifestDir: string, flowLikeType: FlowLikeType): Promise<FlowLikeData | undefined> {
+        const flowLikePath = await resolveManifest(manifestDir, flowLikeType);
+        if (flowLikePath) {
+            const data = await readManifestFile(flowLikePath);
+            if (data) {
+                const uiData = await readJSONFile(path.join(manifestDir, flowUIOOJson));
+                return new FlowLikeData(pkgData, flowLikeType, manifestName, manifestDir, flowLikePath, data, uiData);
+            }
+        }
     }
 
-    private _splitPath(p: string): [string, string, string] {
-        let pkgver = p;
-        let file = "";
-        const i = p.indexOf("/");
-        if (i >= 0) {
-            pkgver = p.slice(0, i);
-            file = p.slice(i + 1);
-        }
-        const m = pkgver.match(/-\d+\./);
-        if (m?.index) {
-            const pkg = pkgver.slice(0, m.index);
-            const version = pkgver.slice(m.index + 1);
-            return [pkg, version, file];
-        }
-        return [p, "", file];
+    public readonly title: string | undefined;
+    public readonly description: string | undefined;
+    public readonly icon: string | undefined;
+    
+    public constructor(
+        public readonly pkgData: PkgData,
+        public readonly flowLikeType: FlowLikeType,
+        public readonly manifestName: string,
+        public readonly manifestDir: string,
+        public readonly manifestPath: string,
+        public readonly data: Record<string, any>,
+        public readonly uiData: Record<string, any> | undefined,
+    ) {
+        this.title = data.title || manifestName;
+        this.description = data.description;
+        this.icon = this.pkgData.resolveResourceURI(data.icon, manifestDir);
     }
+}
+
+type SharedBlockType = "task" | "subflow";
+
+class SharedBlockData {
+    public static async create(pkgData: PkgData, blockType: SharedBlockType, blockName: string): Promise<SharedBlockData | undefined> {
+        const blockDir = path.join(pkgData.packageDir, `${blockType}s`, blockName)
+        const blockPath = await resolveManifest(blockDir, blockType);
+        if (blockPath) {
+            const data = await readManifestFile(blockPath);
+            if (data) {
+                return new SharedBlockData(pkgData, blockType, blockName, blockDir, blockPath, data);
+            }
+        }
+    }
+    
+    public readonly title: string | undefined;
+    public readonly description: string | undefined;
+    public readonly icon: string | undefined;
+    
+    public constructor(
+        public readonly pkgData: PkgData,
+        public readonly blockType: SharedBlockType,
+        public readonly blockName: string,
+        public readonly blockDir: string,
+        public readonly blockPath: string,
+        public readonly data: Record<string, any>,
+    ) {
+        this.title = data.title || blockName;
+        this.description = data.description;
+        this.icon = this.pkgData.resolveResourceURI(data.icon, blockDir) || pkgData.icon;
+    }
+}
+
+class SubflowBlockData implements SharedBlockData, FlowLikeData {
+    public static async create(pkgData: PkgData, subflowName: string): Promise<SubflowBlockData | undefined> {
+        const manifestDir = path.join(pkgData.packageDir, "subflows", subflowName);
+        const flowLikePath = await resolveManifest(manifestDir, "subflow");
+        if (flowLikePath) {
+            const data = await readManifestFile(flowLikePath);
+            if (data) {
+                const uiData = await readJSONFile(path.join(manifestDir, flowUIOOJson));
+                return new SubflowBlockData(pkgData, 'subflow', subflowName, manifestDir, flowLikePath, data, uiData);
+            }
+        }
+    }
+    
+    public readonly title: string | undefined;
+    public readonly description: string | undefined;
+    public readonly icon: string | undefined;
+    
+    public readonly blockType: SharedBlockType
+        public readonly blockName: string
+        public readonly blockDir: string
+        public readonly blockPath: string
+    
+    public constructor(
+        public readonly pkgData: PkgData,
+        public readonly flowLikeType: "subflow",
+        public readonly manifestName: string,
+        public readonly manifestDir: string,
+        public readonly manifestPath: string,
+        public readonly data: Record<string, any>,
+        public readonly uiData: Record<string, any> | undefined,
+    ) {
+        this.title = data.title || manifestName;
+        this.description = data.description;
+        this.icon = this.pkgData.resolveResourceURI(data.icon, manifestDir) || pkgData.icon;
+        this.blockType = flowLikeType
+        this.blockName = manifestName;
+        this.blockDir = manifestDir;
+        this.blockPath = manifestPath;
+    }
+}
+
+
+async function resolveManifest(dirPath: string, type: string): Promise<string | undefined> {
+    let filePath = path.join(dirPath, `${type}.oo.yaml`);
+    if (await isFile(filePath)) {
+        return filePath;
+    }
+    filePath = path.join(dirPath, `${type}.oo.yml`);
+    if (await isFile(filePath)) {
+        return filePath;
+    }
+}
+
+async function readManifestFile(manifestPath: string): Promise<Record<string, any> | undefined> {
+    try {
+        const content = await readFile(manifestPath);
+        if (content) {
+            const data = YAML.parse(content);
+            if (isPlainObject(data)) {
+                return data;
+            }
+        }
+    }
+    catch {
+        return undefined;
+    }
+}
+
+async function readJSONFile(filePath: string): Promise<Record<string, any> | undefined> {
+    try {
+        const content = await readFile(filePath);
+        if (content) {
+            const data = JSON.parse(content);
+            if (isPlainObject(data)) {
+                return data;
+            }
+        }
+    } catch {}
+}
+
+function isPlainObject(x: unknown): x is Record<string, any> {
+    return typeof x === "object" && x !== null && !Array.isArray(x);
 }

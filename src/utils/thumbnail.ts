@@ -209,7 +209,7 @@ export class Thumbnail implements ThumbnailProvider {
 
     private constructor(
         private readonly wsPkgData: PkgData,
-    ) {}
+    ) { }
 
     async provideThumbnail(): Promise<PackageThumbnail | undefined> {
         const result: PackageThumbnail = {
@@ -358,7 +358,7 @@ export class Thumbnail implements ThumbnailProvider {
                 node.icon ??= subflowData.icon;
                 node.inputHandleDefs = subflowData.data.inputs_def;
                 node.outputHandleDefs = subflowData.data.outputs_def;
-                node.slotNodeDefs = await this._getSlotNodeDefs(subflowData, raw);
+                node.slotNodeDefs = await this._getSlotNodeDefs(subflowData);
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -379,7 +379,7 @@ export class Thumbnail implements ThumbnailProvider {
         return node;
     }
 
-    private async _getSlotNodeDefs(subflowData: SharedBlockData, ownerNode: Node): Promise<SlotNodeDef[] | undefined> {
+    private async _getSlotNodeDefs(subflowData: SharedBlockData): Promise<SlotNodeDef[] | undefined> {
         const slotNodeDefs: SlotNodeDef[] = [];
         for (const node of subflowData.data.nodes || []) {
             if (node.slot) {
@@ -388,7 +388,7 @@ export class Thumbnail implements ThumbnailProvider {
                     title: node.title,
                     icon: subflowData.pkgData.resolveResourceURI(node.icon, subflowData.blockDir),
                     description: node.description,
-                    inputHandleDefs: ownerNode.slots?.find(s => s.slot_node_id === node.node_id)?.inputs_def,
+                    inputHandleDefs: node.slot.inputs_def,
                 });
             }
         }
@@ -420,7 +420,7 @@ export class Thumbnail implements ThumbnailProvider {
 class DepsQuery {
     private cache: Map<string, PkgData | null | Promise<PkgData | undefined>> = new Map();
 
-    public constructor(public readonly searchPath: string) {}
+    public constructor(public readonly searchPath: string) { }
 
     public async getPkgData(packageName: string, packageVersion: string): Promise<PkgData | undefined> {
         const packageId = `${packageName}-${packageVersion}`;
@@ -693,7 +693,7 @@ async function readJSONFile(filePath: string): Promise<Record<string, any> | und
             }
         }
     }
-    catch {}
+    catch { }
 }
 
 function isPlainObject(x: unknown): x is Record<string, any> {

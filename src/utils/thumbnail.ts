@@ -330,6 +330,7 @@ export class Thumbnail implements ThumbnailProvider {
                 node.additionalInputs = taskData.data.additional_inputs;
                 node.outputHandleDefs = taskData.data.outputs_def;
                 node.additionalOutputs = taskData.data.additional_outputs;
+                node.slotNodeDefs = await this._getSlotNodeDefs(taskData, "slot_nodes");
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -341,6 +342,7 @@ export class Thumbnail implements ThumbnailProvider {
             node.additionalInputDefs = raw.inputs_def;
             node.additionalOutputDefs = raw.outputs_def;
             node.handleInputsFrom = raw.inputs_from;
+            node.slots = raw.slots;
         }
         else if (raw.task) {
             node.type = NODE_TYPE.TaskNode;
@@ -358,7 +360,7 @@ export class Thumbnail implements ThumbnailProvider {
                 node.icon ??= subflowData.icon;
                 node.inputHandleDefs = subflowData.data.inputs_def;
                 node.outputHandleDefs = subflowData.data.outputs_def;
-                node.slotNodeDefs = await this._getSlotNodeDefs(subflowData);
+                node.slotNodeDefs = await this._getSlotNodeDefs(subflowData, "nodes");
             }
             else {
                 // Guess input handle defs from inputs from.
@@ -379,14 +381,14 @@ export class Thumbnail implements ThumbnailProvider {
         return node;
     }
 
-    private async _getSlotNodeDefs(subflowData: SharedBlockData): Promise<SlotNodeDef[] | undefined> {
+    private async _getSlotNodeDefs(blockData: SharedBlockData, field: "nodes" | "slot_nodes"): Promise<SlotNodeDef[] | undefined> {
         const slotNodeDefs: SlotNodeDef[] = [];
-        for (const node of subflowData.data.nodes || []) {
+        for (const node of blockData.data[field] || []) {
             if (node.slot) {
                 slotNodeDefs.push({
                     slot_node_id: node.node_id,
                     title: node.title,
-                    icon: subflowData.pkgData.resolveResourceURI(node.icon, subflowData.blockDir),
+                    icon: blockData.pkgData.resolveResourceURI(node.icon, blockData.blockDir),
                     description: node.description,
                     inputHandleDefs: node.slot.inputs_def,
                 });

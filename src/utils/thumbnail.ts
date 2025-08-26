@@ -499,7 +499,7 @@ class PkgData {
     }
 
     public localize(str: string | undefined): string | undefined {
-        if (str && str.startsWith('%') && str.endsWith('%') && str.length > 2) {
+        if (str && str.startsWith("%") && str.endsWith("%") && str.length > 2) {
             const key = str.slice(1, -1);
             return this.userLocale?.[key] || str;
         }
@@ -678,7 +678,7 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
 }
 
 async function resolveLocaleFile(dirPath: string): Promise<string | undefined> {
-    let filePath = path.join(dirPath, "oo-locales/en.json");
+    const filePath = path.join(dirPath, "oo-locales/en.json");
     if (await isFile(filePath)) {
         return filePath;
     }

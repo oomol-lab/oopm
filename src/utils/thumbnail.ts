@@ -24,8 +24,8 @@ interface BlockThumbnail {
     title?: string;
     description?: string;
     icon?: string;
-    inputHandleDefs?: InputHandleDef[];
-    outputHandleDefs?: OutputHandleDef[];
+    inputHandleDefs?: (InputHandleDef | GroupDividerDef)[];
+    outputHandleDefs?: (OutputHandleDef | GroupDividerDef)[];
     executorName?: string;
     nodes?: Node[];
     handleOutputsFrom?: HandleOutputFrom[];
@@ -41,10 +41,10 @@ interface NodeThumbnail {
     subflow?: string;
     executorName?: string;
     valueHandleDefs?: ValueHandleDef[];
-    inputHandleDefs?: InputHandleDef[];
+    inputHandleDefs?: (InputHandleDef | GroupDividerDef)[];
     additionalInputs?: boolean;
     additionalInputDefs?: InputHandleDef[];
-    outputHandleDefs?: OutputHandleDef[];
+    outputHandleDefs?: (OutputHandleDef | GroupDividerDef)[];
     additionalOutputs?: boolean;
     additionalOutputDefs?: OutputHandleDef[];
     slots?: SlotProvider[];
@@ -57,7 +57,7 @@ interface SlotNodeDef {
     title?: string;
     icon?: string;
     description?: string;
-    inputHandleDefs?: InputHandleDef[];
+    inputHandleDefs?: (InputHandleDef | GroupDividerDef)[];
 }
 
 interface SlotProvider {
@@ -67,6 +67,11 @@ interface SlotProvider {
     task?: string;
     inputs_def?: InputHandleDef[];
     inputs_from?: HandleInputFrom[];
+}
+
+interface GroupDividerDef {
+    group: string;
+    collapsed?: boolean;
 }
 
 interface OutputHandleDef {
@@ -148,13 +153,13 @@ interface Node {
 }
 
 interface InlineSlotBlock {
-    inputs_def?: InputHandleDef[] | undefined;
-    outputs_def?: OutputHandleDef[] | undefined;
+    inputs_def?: (InputHandleDef | GroupDividerDef)[] | undefined;
+    outputs_def?: (OutputHandleDef | GroupDividerDef)[] | undefined;
 }
 
 interface InlineTaskBlock {
-    inputs_def?: InputHandleDef[];
-    outputs_def?: OutputHandleDef[];
+    inputs_def?: (InputHandleDef | GroupDividerDef)[];
+    outputs_def?: (OutputHandleDef | GroupDividerDef)[];
     render?: string;
     ui?: any;
     executor: Executor;
@@ -299,8 +304,8 @@ export class Thumbnail implements ThumbnailProvider {
         }
         return {
             name: flowData.manifestName,
-            title: flowData.title,
-            description: flowData.description,
+            title: this.wsPkgData.localize(flowData.title),
+            description: this.wsPkgData.localize(flowData.description),
             icon: flowData.icon,
             nodes,
             uiData: flowData.uiData,
@@ -310,9 +315,9 @@ export class Thumbnail implements ThumbnailProvider {
     private async _getNodeThumbnail(raw: Node, flowData: FlowLikeData): Promise<NodeThumbnail | undefined> {
         const node: NodeThumbnail = {
             nodeId: raw.node_id,
-            title: raw.title,
+            title: this.wsPkgData.localize(raw.title),
             icon: flowData.pkgData.resolveResourceURI(raw.icon, flowData.manifestDir),
-            description: raw.description,
+            description: this.wsPkgData.localize(raw.description),
         };
 
         if (raw.values) {
@@ -387,9 +392,9 @@ export class Thumbnail implements ThumbnailProvider {
             if (node.slot) {
                 slotNodeDefs.push({
                     slot_node_id: node.node_id,
-                    title: node.title,
+                    title: this.wsPkgData.localize(node.title),
                     icon: blockData.pkgData.resolveResourceURI(node.icon, blockData.blockDir),
-                    description: node.description,
+                    description: this.wsPkgData.localize(node.description),
                     inputHandleDefs: node.slot.inputs_def,
                 });
             }
@@ -448,8 +453,10 @@ class PkgData {
         const packagePath = await resolveManifest(workspaceDir, "package");
         if (packagePath) {
             const data = await readManifestFile(packagePath);
+            const localePath = await resolveLocaleFile(workspaceDir);
+            const userLocale = localePath ? await readJSONFile(localePath) : undefined;
             if (data && data.name && data.version) {
-                return new PkgData(depsQuery, data.name, data.version, workspaceDir, packagePath, data);
+                return new PkgData(depsQuery, data.name, data.version, workspaceDir, packagePath, data, userLocale);
             }
         }
     }
@@ -458,8 +465,10 @@ class PkgData {
         const packagePath = await resolveManifest(packageDir, "package");
         if (packagePath) {
             const data = readManifestFile(packagePath);
+            const localePath = await resolveLocaleFile(packageDir);
+            const userLocale = localePath ? await readJSONFile(localePath) : undefined;
             if (data) {
-                return new PkgData(depsQuery, packageName, packageVersion, packageDir, packagePath, data);
+                return new PkgData(depsQuery, packageName, packageVersion, packageDir, packagePath, data, userLocale);
             }
         }
     }
@@ -480,12 +489,21 @@ class PkgData {
         public readonly packageDir: string,
         public readonly packagePath: string,
         public readonly data: Record<string, any>,
+        public readonly userLocale?: Record<string, string | undefined>,
     ) {
         this.searchPath = depsQuery.searchPath;
         this.icon = this.resolveResourceURI(data.icon, packageDir);
         this.title = data.title || data.name;
         this.description = data.description;
         this.dependencies = isPlainObject(data.dependencies) ? data.dependencies : {};
+    }
+
+    public localize(str: string | undefined): string | undefined {
+        if (str && str.startsWith('%') && str.endsWith('%') && str.length > 2) {
+            const key = str.slice(1, -1);
+            return this.userLocale?.[key] || str;
+        }
+        return str;
     }
 
     public resolveResourceURI(uri: string | undefined, manifestDir: string): string | undefined {
@@ -580,8 +598,8 @@ class FlowLikeData {
         public readonly data: Record<string, any>,
         public readonly uiData: Record<string, any> | undefined,
     ) {
-        this.title = data.title || manifestName;
-        this.description = data.description;
+        this.title = this.pkgData.localize(data.title) || manifestName;
+        this.description = this.pkgData.localize(data.description);
         this.icon = this.pkgData.resolveResourceURI(data.icon, manifestDir);
     }
 }
@@ -612,8 +630,8 @@ class SharedBlockData {
         public readonly blockPath: string,
         public readonly data: Record<string, any>,
     ) {
-        this.title = data.title || blockName;
-        this.description = data.description;
+        this.title = this.pkgData.localize(data.title) || blockName;
+        this.description = this.pkgData.localize(data.description);
         this.icon = this.pkgData.resolveResourceURI(data.icon, blockDir) || pkgData.icon;
     }
 }
@@ -649,13 +667,20 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
         public readonly data: Record<string, any>,
         public readonly uiData: Record<string, any> | undefined,
     ) {
-        this.title = data.title || manifestName;
-        this.description = data.description;
+        this.title = this.pkgData.localize(data.title) || manifestName;
+        this.description = this.pkgData.localize(data.description);
         this.icon = this.pkgData.resolveResourceURI(data.icon, manifestDir) || pkgData.icon;
         this.blockType = flowLikeType;
         this.blockName = manifestName;
         this.blockDir = manifestDir;
         this.blockPath = manifestPath;
+    }
+}
+
+async function resolveLocaleFile(dirPath: string): Promise<string | undefined> {
+    let filePath = path.join(dirPath, "oo-locales/en.json");
+    if (await isFile(filePath)) {
+        return filePath;
     }
 }
 

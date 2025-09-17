@@ -47,6 +47,8 @@ interface NodeThumbnail {
     outputHandleDefs?: (OutputHandleDef | GroupDividerDef)[];
     additionalOutputs?: boolean;
     additionalOutputDefs?: OutputHandleDef[];
+    conditionHandleDefs?: ConditionHandleDef[];
+    defaultConditionHandleDef?: DefaultConditionHandleDef;
     slots?: SlotProvider[];
     slotNodeDefs?: SlotNodeDef[];
     handleInputsFrom?: HandleInputFrom[];
@@ -87,6 +89,22 @@ interface InputHandleDef extends OutputHandleDef {
 }
 
 interface ValueHandleDef extends InputHandleDef { }
+
+interface ConditionExpression {
+    input_handle: string;
+    operator: string;
+    value?: any;
+}
+
+interface DefaultConditionHandleDef {
+    handle: string;
+    description?: string;
+}
+
+interface ConditionHandleDef extends DefaultConditionHandleDef {
+    logical?: string;
+    expressions?: ConditionExpression[];
+}
 
 interface HandleInputFrom {
     handle: string;
@@ -150,6 +168,13 @@ interface Node {
     slots?: SlotProvider[];
 
     slot?: InlineSlotBlock;
+
+    conditions?: InlineConditionBlock;
+}
+
+interface InlineConditionBlock {
+    cases?: ConditionHandleDef[];
+    default?: DefaultConditionHandleDef;
 }
 
 interface InlineSlotBlock {
@@ -182,6 +207,7 @@ enum NODE_TYPE {
     SubflowNode = "subflow_node",
     SlotNode = "slot_node",
     ValueNode = "value_node",
+    ConditionNode = "condition_node",
 }
 
 const isFile = async (path: string): Promise<boolean> => {
@@ -375,6 +401,13 @@ export class Thumbnail implements ThumbnailProvider {
                 }));
             }
             node.slots = raw.slots;
+            node.handleInputsFrom = raw.inputs_from;
+        }
+        else if (typeof raw.conditions === "object" && raw.conditions) {
+            node.type = NODE_TYPE.ConditionNode;
+            node.inputHandleDefs = raw.inputs_def;
+            node.conditionHandleDefs = raw.conditions.cases;
+            node.defaultConditionHandleDef = raw.conditions.default;
             node.handleInputsFrom = raw.inputs_from;
         }
         else {

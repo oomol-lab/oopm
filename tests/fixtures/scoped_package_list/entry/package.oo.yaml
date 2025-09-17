@@ -1,0 +1,6 @@
+name: test-scoped-list
+version: 0.0.1
+dependencies:
+  "@foo/bar": "1.0.0"
+  "@scope/other": "1.0.0"
+  "normal-package": "1.0.0"

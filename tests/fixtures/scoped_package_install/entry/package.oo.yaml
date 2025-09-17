@@ -1,0 +1,4 @@
+name: test-scoped
+version: 0.0.1
+dependencies:
+  "@foo/bar": "1.0.0"

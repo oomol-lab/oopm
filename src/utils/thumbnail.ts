@@ -403,7 +403,7 @@ export class Thumbnail implements ThumbnailProvider {
             node.slots = raw.slots;
             node.handleInputsFrom = raw.inputs_from;
         }
-        else if (typeof raw.conditions === 'object' && raw.conditions) {
+        else if (typeof raw.conditions === "object" && raw.conditions) {
             node.type = NODE_TYPE.ConditionNode;
             node.inputHandleDefs = raw.inputs_def;
             node.conditionHandleDefs = raw.conditions.cases;

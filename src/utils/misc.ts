@@ -19,3 +19,7 @@ export function nerfURL(url: string) {
     const rel = new URL(".", from);
     return `//${rel.host}${rel.pathname}`;
 }
+
+export function normalizePackageName(name: string): string {
+    return name.replace(/\//g, "+");
+}

@@ -176,11 +176,15 @@ export async function transformNodeModules(dir: string) {
     }>();
 
     const ps = result
-        // Filter out paths that do not conform to this rule: node_modules/PACKAGE_NAME/package/package.oo.yaml
+        // Filter out paths that do not conform to this rule:
+        // node_modules/PACKAGE_NAME/package/package.oo.yaml
+        // node_modules/@scope/PACKAGE_NAME/package/package.oo.yaml
         .filter((p) => {
             // [..., "node_modules", PACKAGE_NAME, "package", "package.oo.yaml"]
             const parts = p.split(path.sep);
-            return parts[parts.length - 4] === "node_modules";
+            const nonScoped = parts[parts.length - 4] === "node_modules";
+            const scoped = parts[parts.length - 4].startsWith("@") && parts[parts.length - 5] === "node_modules";
+            return nonScoped || scoped;
         })
         .map(async (p) => {
             const source = path.dirname(p);

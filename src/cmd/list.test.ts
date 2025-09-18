@@ -104,6 +104,36 @@ describe("list", () => {
             ].sort(sortDeps));
         }
     });
+
+    it("should list scoped packages correctly", async () => {
+        const p = fixture("scoped_package_list");
+
+        const entryDir = path.join(p, "entry");
+        const localDir = path.join(p, "local_storage");
+        const localDir2 = path.join(p, "local_storage_2");
+
+        const result = await list(entryDir, [localDir, localDir2]);
+
+        expect(result.length).toBe(3);
+
+        expect(result.sort(sortDeps)).toStrictEqual([
+            {
+                name: "@foo/bar",
+                version: "1.0.0",
+                distDir: path.join(localDir, "@foo+bar-1.0.0"),
+            },
+            {
+                name: "@scope/other",
+                version: "1.0.0",
+                distDir: path.join(localDir2, "@scope+other-1.0.0"),
+            },
+            {
+                name: "normal-package",
+                version: "1.0.0",
+                distDir: path.join(localDir, "normal-package-1.0.0"),
+            },
+        ].sort(sortDeps));
+    });
 });
 
 function sortDeps(a: SearchDep, b: SearchDep) {

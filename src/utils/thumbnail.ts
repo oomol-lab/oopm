@@ -29,6 +29,7 @@ interface BlockThumbnail {
     executorName?: string;
     nodes?: Node[];
     handleOutputsFrom?: HandleOutputFrom[];
+    uiData?: any;
 }
 
 interface NodeThumbnail {
@@ -278,6 +279,7 @@ export class Thumbnail implements ThumbnailProvider {
                     outputHandleDefs: subflowData.data.outputs_def,
                     nodes: subflowData.data.nodes,
                     handleOutputsFrom: subflowData.data.outputs_from,
+                    uiData: subflowData.uiData,
                 });
             }
         }

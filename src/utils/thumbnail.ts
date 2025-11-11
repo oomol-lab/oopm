@@ -234,7 +234,7 @@ export class Thumbnail implements ThumbnailProvider {
         manifestFileCache.clear();
     }
 
-    public static async create(workspaceDir: string, registryStoreDir: string, lang?: string): Promise<Thumbnail | undefined> {
+    public static async create(workspaceDir: string, registryStoreDir: string, lang: string): Promise<Thumbnail | undefined> {
         const depsQuery = new DepsQuery(registryStoreDir, lang);
         const wsPkgData = await PkgData.createWS(
             depsQuery,
@@ -469,7 +469,7 @@ export class Thumbnail implements ThumbnailProvider {
 class DepsQuery {
     private cache: Map<string, PkgData | null | Promise<PkgData | undefined>> = new Map();
 
-    public constructor(public readonly searchPath: string, public readonly lang?: string) { }
+    public constructor(public readonly searchPath: string, public readonly lang: string) { }
 
     public async getPkgData(packageName: string, packageVersion: string): Promise<PkgData | undefined> {
         const packageId = `${packageName}-${packageVersion}`;
@@ -491,24 +491,30 @@ class DepsQuery {
 }
 
 class PkgData {
-    public static async createWS(depsQuery: DepsQuery, workspaceDir: string, lang?: string): Promise<PkgData | undefined> {
+    public static async createWS(depsQuery: DepsQuery, workspaceDir: string, lang: string): Promise<PkgData | undefined> {
         const packagePath = await resolveManifest(workspaceDir, "package");
         if (packagePath) {
             const data = await readManifestFile(packagePath);
             const localePath = await resolveLocaleFile(workspaceDir, lang);
             const userLocale = localePath ? await readJSONFile(localePath) : undefined;
+            if (!userLocale && lang && lang !== "en") {
+                return;
+            }
             if (data && data.name && data.version) {
                 return new PkgData(depsQuery, data.name, data.version, workspaceDir, packagePath, data, userLocale);
             }
         }
     }
 
-    public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string, lang?: string): Promise<PkgData | undefined> {
+    public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string, lang: string): Promise<PkgData | undefined> {
         const packagePath = await resolveManifest(packageDir, "package");
         if (packagePath) {
             const data = readManifestFile(packagePath);
             const localePath = await resolveLocaleFile(packageDir, lang);
             const userLocale = localePath ? await readJSONFile(localePath) : undefined;
+            if (!userLocale && lang && lang !== "en") {
+                return;
+            }
             if (data) {
                 return new PkgData(depsQuery, packageName, packageVersion, packageDir, packagePath, data, userLocale);
             }

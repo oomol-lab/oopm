@@ -509,7 +509,7 @@ class PkgData {
     public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string, lang: string): Promise<PkgData | undefined> {
         const packagePath = await resolveManifest(packageDir, "package");
         if (packagePath) {
-            const data = readManifestFile(packagePath);
+            const data = await readManifestFile(packagePath);
             const localePath = await resolveLocaleFile(packageDir, lang);
             const userLocale = localePath ? await readJSONFile(localePath) : undefined;
             if (!userLocale && lang && lang !== "en") {

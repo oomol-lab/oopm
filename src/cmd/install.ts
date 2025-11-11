@@ -2,7 +2,7 @@ import type { Dep, DepRaw, Deps, IDepMap, InstallAllResult, InstallFileResult, I
 import path from "node:path";
 import { execa } from "execa";
 import pLimit from "p-limit";
-import { ooPackageName, ooThumbnailName } from "../const";
+import { ooPackageName, ooThumbnailNames } from "../const";
 import { copyDir, exists, mkdir, move, remove, tempDir, walk, xTar } from "../utils/fs";
 import { env, normalizePackageName } from "../utils/misc";
 import {
@@ -82,7 +82,9 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
         }
         await mkdir(path.dirname(targetDir));
         await move(tempDir, targetDir);
-        await remove(path.join(targetDir, ooThumbnailName));
+        for (const ooThumbnailName of ooThumbnailNames) {
+            await remove(path.join(targetDir, ooThumbnailName));
+        }
         return {
             target: targetDir,
             isOverwrite: isExists,
@@ -356,7 +358,9 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
 }
 
 function installFilter(src: string, _dest: string, source: string, _destination: string): boolean {
-    return path.join(src, ooThumbnailName) !== source;
+    return ooThumbnailNames.every((ooThumbnailName) => {
+        return path.join(src, ooThumbnailName) !== source;
+    });
 }
 
 async function integrityCheck(options: _InstallOptions, tempDistDir: string): Promise<SearchDep[]> {

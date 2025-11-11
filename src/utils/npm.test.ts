@@ -56,6 +56,7 @@ describe.concurrent("generatePackageJson", () => {
                 "package",
                 "package/.gitignore",
                 "package/.oo-thumbnail.json",
+                "package/.oo-thumbnail.zh-CN.json",
             ],
         });
     });

@@ -227,12 +227,19 @@ const readFile = async (path: string): Promise<string | undefined> => {
     catch { }
 };
 
+const manifestFileCache = new Map<string, Record<string, any> | null>();
+
 export class Thumbnail implements ThumbnailProvider {
-    public static async create(workspaceDir: string, registryStoreDir: string): Promise<Thumbnail | undefined> {
-        const depsQuery = new DepsQuery(registryStoreDir);
+    public static clearCache(): void {
+        manifestFileCache.clear();
+    }
+
+    public static async create(workspaceDir: string, registryStoreDir: string, lang: string): Promise<Thumbnail | undefined> {
+        const depsQuery = new DepsQuery(registryStoreDir, lang);
         const wsPkgData = await PkgData.createWS(
             depsQuery,
             workspaceDir,
+            lang,
         );
         if (wsPkgData) {
             return new Thumbnail(wsPkgData);
@@ -462,7 +469,7 @@ export class Thumbnail implements ThumbnailProvider {
 class DepsQuery {
     private cache: Map<string, PkgData | null | Promise<PkgData | undefined>> = new Map();
 
-    public constructor(public readonly searchPath: string) { }
+    public constructor(public readonly searchPath: string, public readonly lang: string) { }
 
     public async getPkgData(packageName: string, packageVersion: string): Promise<PkgData | undefined> {
         const packageId = `${packageName}-${packageVersion}`;
@@ -475,7 +482,7 @@ class DepsQuery {
                 return pkgData;
             }
         }
-        const p = PkgData.create(this, packageName, packageVersion, path.join(this.searchPath, packageId));
+        const p = PkgData.create(this, packageName, packageVersion, path.join(this.searchPath, packageId), this.lang);
         this.cache.set(packageId, p);
         const pkgData = await p;
         this.cache.set(packageId, pkgData || null);
@@ -484,24 +491,30 @@ class DepsQuery {
 }
 
 class PkgData {
-    public static async createWS(depsQuery: DepsQuery, workspaceDir: string): Promise<PkgData | undefined> {
+    public static async createWS(depsQuery: DepsQuery, workspaceDir: string, lang: string): Promise<PkgData | undefined> {
         const packagePath = await resolveManifest(workspaceDir, "package");
         if (packagePath) {
             const data = await readManifestFile(packagePath);
-            const localePath = await resolveLocaleFile(workspaceDir);
+            const localePath = await resolveLocaleFile(workspaceDir, lang);
             const userLocale = localePath ? await readJSONFile(localePath) : undefined;
+            if (!userLocale && lang && lang !== "en") {
+                return;
+            }
             if (data && data.name && data.version) {
                 return new PkgData(depsQuery, data.name, data.version, workspaceDir, packagePath, data, userLocale);
             }
         }
     }
 
-    public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string): Promise<PkgData | undefined> {
+    public static async create(depsQuery: DepsQuery, packageName: string, packageVersion: string, packageDir: string, lang: string): Promise<PkgData | undefined> {
         const packagePath = await resolveManifest(packageDir, "package");
         if (packagePath) {
-            const data = readManifestFile(packagePath);
-            const localePath = await resolveLocaleFile(packageDir);
+            const data = await readManifestFile(packagePath);
+            const localePath = await resolveLocaleFile(packageDir, lang);
             const userLocale = localePath ? await readJSONFile(localePath) : undefined;
+            if (!userLocale && lang && lang !== "en") {
+                return;
+            }
             if (data) {
                 return new PkgData(depsQuery, packageName, packageVersion, packageDir, packagePath, data, userLocale);
             }
@@ -712,8 +725,8 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
     }
 }
 
-async function resolveLocaleFile(dirPath: string): Promise<string | undefined> {
-    const filePath = path.join(dirPath, "oo-locales/en.json");
+async function resolveLocaleFile(dirPath: string, lang?: string): Promise<string | undefined> {
+    const filePath = path.join(dirPath, "oo-locales", `${lang || "en"}.json`);
     if (await isFile(filePath)) {
         return filePath;
     }
@@ -731,16 +744,22 @@ async function resolveManifest(dirPath: string, type: string): Promise<string | 
 }
 
 async function readManifestFile(manifestPath: string): Promise<Record<string, any> | undefined> {
+    if (manifestFileCache.has(manifestPath)) {
+        return manifestFileCache.get(manifestPath) || undefined;
+    }
     try {
         const content = await readFile(manifestPath);
         if (content) {
             const data = YAML.parse(content);
             if (isPlainObject(data)) {
+                manifestFileCache.set(manifestPath, data);
                 return data;
             }
         }
+        manifestFileCache.set(manifestPath, null);
     }
     catch {
+        manifestFileCache.set(manifestPath, null);
         return undefined;
     }
 }

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { execa } from "execa";
 import { globby } from "globby";
+import { ooThumbnailNames } from "../const";
 import { copyDir, remove, tempDir, writeFile } from "../utils/fs";
 import { env } from "../utils/misc";
 import { generatePackageJson } from "../utils/npm";
@@ -26,7 +27,7 @@ export async function prePack(p: string, ignore: string[]) {
         absolute: true,
     });
 
-    const alwaysAllow = [path.join(p, ".oo-thumbnail.json")];
+    const alwaysAllow = ooThumbnailNames.map(name => path.join(p, name));
 
     await Promise.all([
         copyDir(p, path.join(workdir, "package"), (src, _dest, source, _destination) => {

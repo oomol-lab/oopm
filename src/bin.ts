@@ -101,8 +101,8 @@ program.command("thumbnail")
     .argument("[dir]", "The workdir directory", ".")
     .option("-s --search-dir <searchDir>", STORE_DIR_DESC)
     .action(async (dir, options) => {
-        const thumbnailPath = await thumbnail(path.resolve(dir), getStoreDir(options.searchDir));
-        if (thumbnailPath) {
+        const thumbnailPaths = await thumbnail(path.resolve(dir), getStoreDir(options.searchDir));
+        if (thumbnailPaths.length) {
             // eslint-disable-next-line no-console
             console.log("Thumbnail generated successfully.");
         }

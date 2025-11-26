@@ -267,8 +267,8 @@ export class Thumbnail implements ThumbnailProvider {
                     title: taskData.title,
                     description: taskData.description,
                     icon: taskData.icon,
-                    inputHandleDefs: taskData.data.inputs_def,
-                    outputHandleDefs: taskData.data.outputs_def,
+                    inputHandleDefs: taskData.pkgData.localizeHandleDefs(taskData.data.inputs_def),
+                    outputHandleDefs: taskData.pkgData.localizeHandleDefs(taskData.data.outputs_def),
                     executorName: taskData.data.executor?.name,
                 });
             }
@@ -282,8 +282,8 @@ export class Thumbnail implements ThumbnailProvider {
                     title: subflowData.title,
                     description: subflowData.description,
                     icon: subflowData.icon,
-                    inputHandleDefs: subflowData.data.inputs_def,
-                    outputHandleDefs: subflowData.data.outputs_def,
+                    inputHandleDefs: subflowData.pkgData.localizeHandleDefs(subflowData.data.inputs_def),
+                    outputHandleDefs: subflowData.pkgData.localizeHandleDefs(subflowData.data.outputs_def),
                     nodes: subflowData.data.nodes,
                     handleOutputsFrom: subflowData.data.outputs_from,
                     uiData: subflowData.uiData,
@@ -357,7 +357,7 @@ export class Thumbnail implements ThumbnailProvider {
 
         if (raw.values) {
             node.type = NODE_TYPE.ValueNode;
-            node.valueHandleDefs = raw.values;
+            node.valueHandleDefs = this.wsPkgData.localizeHandleDefs(raw.values);
         }
         else if (typeof raw.task === "string") {
             node.type = NODE_TYPE.TaskNode;
@@ -366,9 +366,9 @@ export class Thumbnail implements ThumbnailProvider {
             if (taskData) {
                 node.icon ??= taskData.icon;
                 node.executorName = taskData.data.executor?.name;
-                node.inputHandleDefs = taskData.data.inputs_def;
+                node.inputHandleDefs = taskData.pkgData.localizeHandleDefs(taskData.data.inputs_def);
                 node.additionalInputs = taskData.data.additional_inputs;
-                node.outputHandleDefs = taskData.data.outputs_def;
+                node.outputHandleDefs = taskData.pkgData.localizeHandleDefs(taskData.data.outputs_def);
                 node.additionalOutputs = taskData.data.additional_outputs;
                 node.slotNodeDefs = await this._getSlotNodeDefs(taskData, "slot_nodes");
             }
@@ -379,8 +379,8 @@ export class Thumbnail implements ThumbnailProvider {
                     json_schema: this._schemaFromValue(a.value),
                 }));
             }
-            node.additionalInputDefs = raw.inputs_def;
-            node.additionalOutputDefs = raw.outputs_def;
+            node.additionalInputDefs = this.wsPkgData.localizeHandleDefs(raw.inputs_def);
+            node.additionalOutputDefs = this.wsPkgData.localizeHandleDefs(raw.outputs_def);
             node.handleInputsFrom = raw.inputs_from;
             node.slots = raw.slots;
         }
@@ -388,8 +388,8 @@ export class Thumbnail implements ThumbnailProvider {
             node.type = NODE_TYPE.TaskNode;
             node.icon = executorIcon(raw.task.executor);
             node.executorName = raw.task.executor.name;
-            node.inputHandleDefs = raw.task.inputs_def;
-            node.outputHandleDefs = raw.task.outputs_def;
+            node.inputHandleDefs = this.wsPkgData.localizeHandleDefs(raw.task.inputs_def);
+            node.outputHandleDefs = this.wsPkgData.localizeHandleDefs(raw.task.outputs_def);
             node.handleInputsFrom = raw.inputs_from;
         }
         else if (typeof raw.subflow === "string") {
@@ -398,8 +398,8 @@ export class Thumbnail implements ThumbnailProvider {
             const subflowData = await this.wsPkgData.resolveSharedBlock("subflow", raw.subflow);
             if (subflowData) {
                 node.icon ??= subflowData.icon;
-                node.inputHandleDefs = subflowData.data.inputs_def;
-                node.outputHandleDefs = subflowData.data.outputs_def;
+                node.inputHandleDefs = subflowData.pkgData.localizeHandleDefs(subflowData.data.inputs_def);
+                node.outputHandleDefs = subflowData.pkgData.localizeHandleDefs(subflowData.data.outputs_def);
                 node.slotNodeDefs = await this._getSlotNodeDefs(subflowData, "nodes");
             }
             else {
@@ -414,9 +414,9 @@ export class Thumbnail implements ThumbnailProvider {
         }
         else if (typeof raw.conditions === "object" && raw.conditions) {
             node.type = NODE_TYPE.ConditionNode;
-            node.inputHandleDefs = raw.inputs_def;
-            node.conditionHandleDefs = raw.conditions.cases;
-            node.defaultConditionHandleDef = raw.conditions.default;
+            node.inputHandleDefs = this.wsPkgData.localizeHandleDefs(raw.inputs_def);
+            node.conditionHandleDefs = this.wsPkgData.localizeHandleDefs(raw.conditions.cases);
+            node.defaultConditionHandleDef = this.wsPkgData.localizeHandleDef(raw.conditions.default);
             node.handleInputsFrom = raw.inputs_from;
         }
         else {
@@ -437,7 +437,7 @@ export class Thumbnail implements ThumbnailProvider {
                     title: this.wsPkgData.localize(node.title),
                     icon: blockData.pkgData.resolveResourceURI(node.icon, blockData.blockDir),
                     description: this.wsPkgData.localize(node.description),
-                    inputHandleDefs: node.slot.inputs_def,
+                    inputHandleDefs: this.wsPkgData.localizeHandleDefs(node.slot.inputs_def),
                 });
             }
         }
@@ -552,6 +552,24 @@ class PkgData {
             return this.userLocale?.[key] || str;
         }
         return str;
+    }
+
+    public localizeHandleDef(def: any): any {
+        if (isPlainObject(def) && typeof def.description === "string") {
+            return { ...def, description: this.localize(def.description) };
+        }
+        return def;
+    }
+
+    public localizeHandleDefs(defs: any): any {
+        if (Array.isArray(defs)) {
+            const newDefs: { description?: string }[] = [];
+            for (const def of defs) {
+                newDefs.push(this.localizeHandleDef(def));
+            }
+            return newDefs;
+        }
+        return defs;
     }
 
     public resolveResourceURI(uri: string | undefined, manifestDir: string): string | undefined {

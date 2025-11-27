@@ -27,6 +27,7 @@ interface BlockThumbnail {
     inputHandleDefs?: (InputHandleDef | GroupDividerDef)[];
     outputHandleDefs?: (OutputHandleDef | GroupDividerDef)[];
     task?: string;
+    subflow?: string;
     executorName?: string;
     nodes?: Node[];
     handleOutputsFrom?: HandleOutputFrom[];
@@ -288,6 +289,7 @@ export class Thumbnail implements ThumbnailProvider {
                     outputHandleDefs: subflowData.pkgData.localizeHandleDefs(subflowData.data.outputs_def),
                     nodes: subflowData.data.nodes,
                     handleOutputsFrom: subflowData.data.outputs_from,
+                    subflow: subflowData.blockResourceName,
                     uiData: subflowData.uiData,
                 });
             }

@@ -26,6 +26,7 @@ interface BlockThumbnail {
     icon?: string;
     inputHandleDefs?: (InputHandleDef | GroupDividerDef)[];
     outputHandleDefs?: (OutputHandleDef | GroupDividerDef)[];
+    task?: string;
     executorName?: string;
     nodes?: Node[];
     handleOutputsFrom?: HandleOutputFrom[];
@@ -269,6 +270,7 @@ export class Thumbnail implements ThumbnailProvider {
                     icon: taskData.icon,
                     inputHandleDefs: taskData.pkgData.localizeHandleDefs(taskData.data.inputs_def),
                     outputHandleDefs: taskData.pkgData.localizeHandleDefs(taskData.data.outputs_def),
+                    task: taskData.blockResourceName,
                     executorName: taskData.data.executor?.name,
                 });
             }
@@ -700,6 +702,10 @@ class SharedBlockData {
         this.description = this.pkgData.localize(data.description);
         this.icon = this.pkgData.resolveResourceURI(data.icon, blockDir) || pkgData.icon;
     }
+
+    public get blockResourceName(): string {
+        return `${this.pkgData.packageName}::${this.blockName}`;
+    }
 }
 
 class SubflowBlockData implements SharedBlockData, FlowLikeData {
@@ -740,6 +746,10 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
         this.blockName = manifestName;
         this.blockDir = manifestDir;
         this.blockPath = manifestPath;
+    }
+
+    public get blockResourceName(): string {
+        return `${this.pkgData.packageName}::${this.blockName}`;
     }
 }
 

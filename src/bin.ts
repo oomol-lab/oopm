@@ -99,9 +99,9 @@ program.command("list")
 program.command("thumbnail")
     .description("Generate thumbnail for a local package")
     .argument("[dir]", "The workdir directory", ".")
-    .option("-s --search-dir <searchDir>", STORE_DIR_DESC)
+    .option("-s --search-dir <searchDir...>", STORE_DIR_DESC, [])
     .action(async (dir, options) => {
-        const thumbnailPaths = await thumbnail(path.resolve(dir), getStoreDir(options.searchDir));
+        const thumbnailPaths = await thumbnail(path.resolve(dir), options.searchDir);
         if (thumbnailPaths.length) {
             // eslint-disable-next-line no-console
             console.log("Thumbnail generated successfully.");

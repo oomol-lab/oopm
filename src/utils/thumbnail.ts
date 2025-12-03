@@ -236,8 +236,8 @@ export class Thumbnail implements ThumbnailProvider {
         manifestFileCache.clear();
     }
 
-    public static async create(workspaceDir: string, registryStoreDir: string, lang: string): Promise<Thumbnail | undefined> {
-        const depsQuery = new DepsQuery(registryStoreDir, lang);
+    public static async create(workspaceDir: string, searchPaths: string[], lang: string): Promise<Thumbnail | undefined> {
+        const depsQuery = new DepsQuery(searchPaths, lang);
         const wsPkgData = await PkgData.createWS(
             depsQuery,
             workspaceDir,
@@ -473,7 +473,7 @@ export class Thumbnail implements ThumbnailProvider {
 class DepsQuery {
     private cache: Map<string, PkgData | null | Promise<PkgData | undefined>> = new Map();
 
-    public constructor(public readonly searchPath: string, public readonly lang: string) { }
+    public constructor(public readonly searchPaths: string[], public readonly lang: string) { }
 
     public async getPkgData(packageName: string, packageVersion: string): Promise<PkgData | undefined> {
         const packageId = `${packageName}-${packageVersion}`;
@@ -486,11 +486,21 @@ class DepsQuery {
                 return pkgData;
             }
         }
-        const p = PkgData.create(this, packageName, packageVersion, path.join(this.searchPath, packageId), this.lang);
-        this.cache.set(packageId, p);
-        const pkgData = await p;
-        this.cache.set(packageId, pkgData || null);
-        return pkgData;
+        let searchPath: string | undefined;
+        for (const p of this.searchPaths) {
+            const exist = await resolveManifest(path.join(p, packageId), "package");
+            if (exist) {
+                searchPath = p;
+                break;
+            }
+        }
+        if (searchPath) {
+            const p = PkgData.create(this, packageName, packageVersion, path.join(searchPath, packageId), this.lang);
+            this.cache.set(packageId, p);
+            const pkgData = await p;
+            this.cache.set(packageId, pkgData || null);
+            return pkgData;
+        }
     }
 }
 
@@ -525,7 +535,7 @@ class PkgData {
         }
     }
 
-    public readonly searchPath: string;
+    public readonly searchPaths: string[];
 
     public readonly title: string | undefined;
     public readonly description: string | undefined;
@@ -543,7 +553,7 @@ class PkgData {
         public readonly data: Record<string, any>,
         public readonly userLocale?: Record<string, string | undefined>,
     ) {
-        this.searchPath = depsQuery.searchPath;
+        this.searchPaths = depsQuery.searchPaths;
         this.icon = this.resolveResourceURI(data.icon, packageDir);
         this.title = data.title || data.name;
         this.description = data.description;

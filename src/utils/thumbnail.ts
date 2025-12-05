@@ -263,7 +263,7 @@ export class Thumbnail implements ThumbnailProvider {
         const rawTasks = await this._listTasks();
         for (const name of rawTasks) {
             const taskData = await this.wsPkgData.getSharedBlockByName("task", name);
-            if (taskData) {
+            if (taskData && !taskData.isPrivate) {
                 (result.blocks ??= []).push({
                     name: taskData.blockName,
                     title: taskData.title,
@@ -279,7 +279,7 @@ export class Thumbnail implements ThumbnailProvider {
         const rawSubflows = await this._listSubflows();
         for (const name of rawSubflows) {
             const subflowData = await this.wsPkgData.getSharedBlockByName("subflow", name);
-            if (subflowData) {
+            if (subflowData && !subflowData.isPrivate) {
                 (result.blocks ??= []).push({
                     name: subflowData.blockName,
                     title: subflowData.title,
@@ -718,6 +718,10 @@ class SharedBlockData {
     public get blockResourceName(): string {
         return `${this.pkgData.packageName}::${this.blockName}`;
     }
+
+    public get isPrivate(): boolean {
+        return this.data.private === true;
+    }
 }
 
 class SubflowBlockData implements SharedBlockData, FlowLikeData {
@@ -762,6 +766,10 @@ class SubflowBlockData implements SharedBlockData, FlowLikeData {
 
     public get blockResourceName(): string {
         return `${this.pkgData.packageName}::${this.blockName}`;
+    }
+
+    public get isPrivate(): boolean {
+        return this.data.private === true;
     }
 }
 

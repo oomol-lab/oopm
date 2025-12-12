@@ -1,6 +1,6 @@
 {
   "name": "oopm",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "OOMOL Package Manager",
   "main": "src/index.ts",
   "module": "src/index.ts",

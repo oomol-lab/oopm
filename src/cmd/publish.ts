@@ -5,7 +5,7 @@ import { env } from "../utils/misc";
 import { createNpmrc, getOOPackageBasicInfo } from "../utils/npm";
 import { defaultIgnore, prePack } from "./pack";
 
-export async function publish(p: string, registry: string, token: string, visibility: string): Promise<{
+export async function publish(p: string, registry: string, token: string, visibility: "public" | "private" = "public"): Promise<{
     name: string;
     version: string;
 }> {

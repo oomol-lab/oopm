@@ -54,5 +54,5 @@ jobs:
 
       - name: Publish
         run: |
-          npm publish --access public
+          pnpm publish --access public
 

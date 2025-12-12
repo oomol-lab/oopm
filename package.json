@@ -9,6 +9,10 @@
   "bin": {
     "oopm": "dist/bin.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oomol-lab/oopm"
+  },
   "publishConfig": {
     "main": "dist/index.cjs",
     "module": "dist/index.js",

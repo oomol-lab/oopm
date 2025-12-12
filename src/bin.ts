@@ -25,8 +25,9 @@ program.command("publish")
     .argument("[dir]", "The package directory", ".")
     .option("-r --registry <registry>", "The registry", "https://registry.oomol.com")
     .requiredOption("-t --token <token>", "The token")
+    .option("--visibility <visibility>", "The visibility of the package", "public")
     .action(async (dir, options) => {
-        await publish(path.resolve(dir), options.registry, options.token);
+        await publish(path.resolve(dir), options.registry, options.token, options.visibility);
     });
 
 const STORE_DIR = "OOPM_STORE_DIR";

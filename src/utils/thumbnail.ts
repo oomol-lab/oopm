@@ -229,6 +229,30 @@ const readFile = async (path: string): Promise<string | undefined> => {
     catch { }
 };
 
+let numericCollator: Intl.Collator | null = null;
+
+try {
+    numericCollator = new Intl.Collator(undefined, { numeric: true });
+}
+catch {
+    // Ignore.
+}
+
+function compareFileName(name1: string, name2: string, order?: string[]): number {
+    if (order) {
+        if (order.includes(name1) && order.includes(name2)) {
+            return order.indexOf(name1) - order.indexOf(name2);
+        }
+        if (order.includes(name1)) {
+            return -1;
+        }
+        if (order.includes(name2)) {
+            return 1;
+        }
+    }
+    return numericCollator?.compare(name1, name2) || name1.localeCompare(name2);
+}
+
 const manifestFileCache = new Map<string, Record<string, any> | null>();
 
 export class Thumbnail implements ThumbnailProvider {
@@ -294,6 +318,7 @@ export class Thumbnail implements ThumbnailProvider {
                 });
             }
         }
+        result.blocks?.sort((a, b) => compareFileName(a.name, b.name, this.wsPkgData.blocksOrder));
         return result;
     }
 
@@ -328,6 +353,7 @@ export class Thumbnail implements ThumbnailProvider {
                 }
             }
         }
+        result.sort((a, b) => compareFileName(a.name, b.name));
         return result;
     }
 
@@ -540,6 +566,7 @@ class PkgData {
     public readonly title: string | undefined;
     public readonly description: string | undefined;
     public readonly icon: string | undefined;
+    public readonly blocksOrder: string[] | undefined;
 
     private readonly dependencies: Record<string, string>;
     private readonly sharedBlockCache: Map<string, SharedBlockData | null | Promise<SharedBlockData | undefined>> = new Map();
@@ -557,6 +584,7 @@ class PkgData {
         this.icon = this.resolveResourceURI(data.icon, packageDir);
         this.title = data.title || data.name;
         this.description = data.description;
+        this.blocksOrder = data.ui?.blocks;
         this.dependencies = isPlainObject(data.dependencies) ? data.dependencies : {};
     }
 

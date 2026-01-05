@@ -278,7 +278,7 @@ export class Thumbnail implements ThumbnailProvider {
 
     async provideThumbnail(): Promise<PackageThumbnail | undefined> {
         const result: PackageThumbnail = {
-            title: this.wsPkgData.packageName,
+            title: this.wsPkgData.displayName,
             icon: this.wsPkgData.icon,
             description: this.wsPkgData.description,
             flows: await this._provideFlowsThumbnail(),
@@ -343,7 +343,7 @@ export class Thumbnail implements ThumbnailProvider {
     private async _provideFlowsThumbnail(): Promise<FlowThumbnail[]> {
         const result: FlowThumbnail[] = [];
         const flowsDir = path.join(this.wsPkgData.packageDir, "flows");
-        const flowNames = await fs.readdir(flowsDir);
+        const flowNames = await fs.readdir(flowsDir).catch(() => []);
         for (const flowName of flowNames) {
             const flowData = await FlowLikeData.create(this.wsPkgData, flowName, path.join(flowsDir, flowName), "flow");
             if (flowData) {
@@ -563,7 +563,7 @@ class PkgData {
 
     public readonly searchPaths: string[];
 
-    public readonly title: string | undefined;
+    public readonly displayName: string | undefined;
     public readonly description: string | undefined;
     public readonly icon: string | undefined;
     public readonly blocksOrder: string[] | undefined;
@@ -582,8 +582,8 @@ class PkgData {
     ) {
         this.searchPaths = depsQuery.searchPaths;
         this.icon = this.resolveResourceURI(data.icon, packageDir);
-        this.title = data.title || data.name;
-        this.description = data.description;
+        this.displayName = this.localize(data.displayName) || data.name;
+        this.description = this.localize(data.description);
         this.blocksOrder = data.ui?.blocks;
         this.dependencies = isPlainObject(data.dependencies) ? data.dependencies : {};
     }

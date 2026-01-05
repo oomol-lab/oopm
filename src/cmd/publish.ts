@@ -5,7 +5,7 @@ import { env } from "../utils/misc";
 import { createNpmrc, getOOPackageBasicInfo } from "../utils/npm";
 import { defaultIgnore, prePack } from "./pack";
 
-export async function publish(p: string, registry: string, token: string, visibility: "public" | "private" = "public"): Promise<{
+export async function publish(p: string, registry: string, token: string, visibility: "public" | "private" = "public", tag?: string): Promise<{
     name: string;
     version: string;
 }> {
@@ -19,10 +19,13 @@ export async function publish(p: string, registry: string, token: string, visibi
 
     await createNpmrc(workdir, registry, token);
 
+    const accessFlag = visibility === "public" ? "public" : "restricted";
+    const tagArgs = tag ? ["--tag", tag] : [];
+
     await execa({
         cwd: workdir,
         env: env(registry),
-    })`npm publish --access ${visibility === "public" ? "public" : "restricted"}`;
+    })`npm publish --access ${accessFlag} ${tagArgs}`;
 
     await remove(workdir).catch(() => {});
 

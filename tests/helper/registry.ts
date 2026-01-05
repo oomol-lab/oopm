@@ -34,6 +34,32 @@ export class Registry {
         await this.fastify.close();
     }
 
+    private compareVersions(a: string, b: string): number {
+        const pa = a.split(".").map(Number);
+        const pb = b.split(".").map(Number);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            const na = pa[i] ?? 0;
+            const nb = pb[i] ?? 0;
+            if (na > nb) {
+                return 1;
+            }
+            if (na < nb) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    private findHighestVersion(versions: Record<string, any>): string | undefined {
+        const versionList = Object.keys(versions);
+        if (versionList.length === 0) {
+            return undefined;
+        }
+        return versionList.reduce((highest, current) =>
+            this.compareVersions(current, highest) > 0 ? current : highest,
+        );
+    }
+
     private registryRoutes() {
         this.fastify.put("/:package", async (req, res) => {
             const name = (req.params as any).package;
@@ -41,11 +67,16 @@ export class Registry {
 
             if (!this.list.has(name)) {
                 this.list.set(name, body);
+                const info = this.list.get(name);
+                const highest = this.findHighestVersion(info.versions);
+                if (highest) {
+                    info["dist-tags"] = { ...info["dist-tags"], latest: highest };
+                }
                 return;
             }
 
             const info = this.list.get(name);
-            info["dist-tags"] = body["dist-tags"];
+            info["dist-tags"] = { ...info["dist-tags"], ...body["dist-tags"] };
             info.versions = {
                 ...info.versions,
                 ...body.versions,
@@ -54,6 +85,11 @@ export class Registry {
                 ...info._attachments,
                 ...body._attachments,
             };
+
+            const highest = this.findHighestVersion(info.versions);
+            if (highest) {
+                info["dist-tags"].latest = highest;
+            }
 
             this.list.set(name, info);
 

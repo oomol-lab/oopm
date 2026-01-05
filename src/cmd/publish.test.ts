@@ -16,7 +16,7 @@ beforeEach(async (ctx) => {
 describe.sequential("publish", () => {
     it("should success for new package", async (ctx) => {
         const p = fixture("publish_new_success");
-        const data = await publish(p, ctx.registry.endpoint, "fake_token", "public");
+        const data = await publish(p, ctx.registry.endpoint, "fake_token", "public", "test");
         expect(data.version).toBe("0.0.1");
 
         const data2 = ctx.registry.getData("publish_success", "0.0.1");
@@ -31,13 +31,13 @@ describe.sequential("publish", () => {
     it("should success for update package", async (ctx) => {
         {
             const p = fixture("publish_new_success");
-            const data = await publish(p, ctx.registry.endpoint, "fake_token", "public");
+            const data = await publish(p, ctx.registry.endpoint, "fake_token", "public", "test");
             expect(data.version).toBe("0.0.1");
         }
 
         {
             const p = fixture("publish_update_success");
-            const data = await publish(p, ctx.registry.endpoint, "fake_token", "public");
+            const data = await publish(p, ctx.registry.endpoint, "fake_token", "public", "test");
             expect(data.version).toBe("0.0.2");
         }
 
@@ -54,7 +54,7 @@ describe.sequential("publish", () => {
         const p = fixture("publish_depend_itself");
 
         await expect(
-            publish(p, ctx.registry.endpoint, "fake_token", "public"),
+            publish(p, ctx.registry.endpoint, "fake_token", "public", "test"),
         ).rejects.toThrow(ERR_OOPM_DEPEND_ITSELF);
     });
 });

@@ -159,7 +159,7 @@ export async function initPackageJson(dir: string, deps: Deps, registry: string,
 export async function createNpmrc(dir: string, registry: string, token: string) {
     const npmrcPath = path.join(dir, ".npmrc");
 
-    await writeFile(npmrcPath, `registry=${registry}\n${nerfURL(registry)}:_authToken=${token}`);
+    await writeFile(npmrcPath, `${nerfURL(registry)}:_authToken=${token}`);
 }
 
 export async function transformNodeModules(dir: string) {

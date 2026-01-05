@@ -35,7 +35,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "ts-check": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage"
   },

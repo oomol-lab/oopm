@@ -125,11 +125,11 @@ describe.sequential("install all", () => {
                 publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "c-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.3"), ctx.registry.endpoint, "fake-token"),
             ]);
+            await publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "e-0.0.2"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "e-0.0.3"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy `local_storage` to distDir
@@ -251,11 +251,11 @@ describe.sequential("install all", () => {
                 publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "c-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "e-0.0.3"), ctx.registry.endpoint, "fake-token"),
             ]);
+            await publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "e-0.0.2"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "e-0.0.3"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy `local_storage` to distDir
@@ -295,13 +295,13 @@ describe.sequential("install all", () => {
                 publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "c-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "d-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "g-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "h-0.0.1"), ctx.registry.endpoint, "fake-token"),
             ]);
+            await publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "d-0.0.2"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy `local_storage` to distDir
@@ -466,12 +466,10 @@ describe.sequential("install deps", () => {
         // Publish `remote_storage` to registry
         {
             const remoteStorage = path.join(p, "remote_storage");
-            await Promise.all([
-                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token"),
-            ]);
+            await publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token");
         }
 
         // Create distDir
@@ -543,12 +541,10 @@ describe.sequential("install deps", () => {
         // Publish `remote_storage` to registry
         {
             const remoteStorage = path.join(p, "remote_storage");
-            await Promise.all([
-                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token"),
-            ]);
+            await publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token");
         }
 
         // Create distDir
@@ -604,12 +600,10 @@ describe.sequential("install deps", () => {
         // Publish `remote_storage` to registry
         {
             const remoteStorage = path.join(p, "remote_storage");
-            await Promise.all([
-                publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token"),
-            ]);
+            await publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "a-0.0.2"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "b-0.0.2"), ctx.registry.endpoint, "fake-token");
         }
 
         // Create distDir and workDir
@@ -677,11 +671,9 @@ describe.sequential("install deps", () => {
         // publish scoped packages to registry
         {
             const remoteStorage = path.join(p, "remote_storage");
-            await Promise.all([
-                publish(path.join(remoteStorage, "@foo+bar-1.0.0"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "@foo+bar-2.0.0"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "@scope+other-1.0.0"), ctx.registry.endpoint, "fake-token"),
-            ]);
+            await publish(path.join(remoteStorage, "@foo+bar-1.0.0"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "@foo+bar-2.0.0"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "@scope+other-1.0.0"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy local_storage to distDir
@@ -794,13 +786,13 @@ describe.sequential("install deps", () => {
                 publish(path.join(remoteStorage, "a-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "b-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "c-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token"),
-                publish(path.join(remoteStorage, "d-0.0.2"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "e-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "f-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "g-0.0.1"), ctx.registry.endpoint, "fake-token"),
                 publish(path.join(remoteStorage, "h-0.0.1"), ctx.registry.endpoint, "fake-token"),
             ]);
+            await publish(path.join(remoteStorage, "d-0.0.1"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "d-0.0.2"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy `local_storage` to distDir

@@ -4,7 +4,7 @@ import { execa } from "execa";
 import pLimit from "p-limit";
 import { ooPackageName, ooThumbnailNames } from "../const";
 import { copyDir, exists, mkdir, move, remove, tempDir, walk, xTar } from "../utils/fs";
-import { env, normalizePackageName } from "../utils/misc";
+import { env } from "../utils/misc";
 import {
     findLatestVersion,
     getDependencies,
@@ -75,7 +75,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
     if (isTarball) {
         const tempDir = await xTar(options.file);
         const { name, version } = await getOOPackageBasicInfo(tempDir);
-        const targetDir = path.join(options.distDir, `${normalizePackageName(name)}-${version}`);
+        const targetDir = path.join(options.distDir, `${name}-${version}`);
         const isExists = await exists(targetDir);
         if (isExists) {
             await remove(targetDir);
@@ -92,7 +92,7 @@ export async function installFile(options: InstallFileOptions): Promise<InstallF
     }
 
     const { name, version } = await getOOPackageBasicInfo(options.file);
-    const targetDir = path.join(options.distDir, `${normalizePackageName(name)}-${version}`);
+    const targetDir = path.join(options.distDir, `${name}-${version}`);
     const isExists = await exists(targetDir);
     if (isExists) {
         await remove(targetDir);
@@ -130,7 +130,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
 
             primaryDepNames.push(`${dep.name}-${version}`);
 
-            const existsDisk = await exists(path.join(options.distDir, `${normalizePackageName(dep.name)}-${version}`, ooPackageName));
+            const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${version}`, ooPackageName));
             if (existsDisk && dependencies?.[dep.name] === version) {
                 alreadyInstalled.push({
                     name: dep.name,
@@ -158,7 +158,7 @@ export async function installPackage(options: InstallPackageOptions): Promise<In
                     version: dependencies![key],
                 };
 
-                const existsDisk = await exists(path.join(options.distDir, `${normalizePackageName(dep.name)}-${dep.version}`, ooPackageName));
+                const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${dep.version}`, ooPackageName));
                 if (!existsDisk) {
                     needInstall.push(dep);
                 }
@@ -210,7 +210,7 @@ export async function installAll(options: InstallAllOptions): Promise<InstallAll
                 version: dependencies![key],
             };
 
-            const existsDisk = await exists(path.join(options.distDir, `${normalizePackageName(dep.name)}-${dep.version}`, ooPackageName));
+            const existsDisk = await exists(path.join(options.distDir, `${dep.name}-${dep.version}`, ooPackageName));
             if (existsDisk) {
                 alreadyInstalled.push(dep);
             }
@@ -278,7 +278,7 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
     const targets: InstallPackageResult["deps"] = {};
 
     for (const dep of options.alreadyInstalled) {
-        const target = path.join(options.distDir, `${normalizePackageName(dep.name)}-${dep.version}`);
+        const target = path.join(options.distDir, `${dep.name}-${dep.version}`);
 
         targets[`${dep.name}-${dep.version}`] = {
             name: dep.name,
@@ -299,7 +299,7 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
             });
         })
         .map(async (i) => {
-            const target = path.join(options.distDir, `${normalizePackageName(i.name)}-${i.version}`);
+            const target = path.join(options.distDir, `${i.name}-${i.version}`);
             const isAlreadyExist = await exists(target);
 
             targets[`${i.name}-${i.version}`] = {
@@ -328,7 +328,7 @@ async function _install(options: _InstallOptions): Promise<InstallPackageResult[
             const searchDeps = await integrityCheck(options, tempDistDir);
             const ps = searchDeps.map(async (dep) => {
                 const fullName = `${dep.name}-${dep.version}` as const;
-                const target = path.join(options.distDir, `${normalizePackageName(dep.name)}-${dep.version}`);
+                const target = path.join(options.distDir, `${dep.name}-${dep.version}`);
                 if (targets[fullName]) {
                     return;
                 }
@@ -397,7 +397,7 @@ async function integrityCheck(options: _InstallOptions, tempDistDir: string): Pr
                 addedMap.set(`${i.name}-${i.version}`, {
                     name: i.name,
                     version: i.version,
-                    distDir: path.join(distDir, `${normalizePackageName(i.name)}-${i.version}`),
+                    distDir: path.join(distDir, `${i.name}-${i.version}`),
                 });
             }
         });
@@ -410,7 +410,7 @@ async function integrityCheck(options: _InstallOptions, tempDistDir: string): Pr
         const moveLimit = pLimit(10);
         const movePs = Array.from(addedMap.values()).map((target) => {
             return moveLimit(async () => {
-                const newTarget = path.join(tempDistDir, `${normalizePackageName(target.name)}-${target.version}`);
+                const newTarget = path.join(tempDistDir, `${target.name}-${target.version}`);
 
                 await move(target.distDir, newTarget);
 
@@ -456,7 +456,7 @@ async function installMissDep(deps: Deps, options: _InstallOptions): Promise<{
     const collectedDeps: Deps = [];
 
     for (const i of info) {
-        const target = path.join(distDir, `${normalizePackageName(i.name)}-${i.version}`);
+        const target = path.join(distDir, `${i.name}-${i.version}`);
         await move(i.source, target);
         collectedDeps.push({
             name: i.name,

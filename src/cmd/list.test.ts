@@ -120,17 +120,47 @@ describe("list", () => {
             {
                 name: "@foo/bar",
                 version: "1.0.0",
-                distDir: path.join(localDir, "@foo+bar-1.0.0"),
+                distDir: path.join(localDir, "@foo/bar-1.0.0"),
             },
             {
                 name: "@scope/other",
                 version: "1.0.0",
-                distDir: path.join(localDir2, "@scope+other-1.0.0"),
+                distDir: path.join(localDir2, "@scope/other-1.0.0"),
             },
             {
                 name: "normal-package",
                 version: "1.0.0",
                 distDir: path.join(localDir, "normal-package-1.0.0"),
+            },
+        ].sort(sortDeps));
+    });
+
+    it("should list scoped packages with nested scoped dependencies", async () => {
+        const p = fixture("scoped_package_with_deps");
+
+        const entryDir = path.join(p, "entry");
+        const localDir = path.join(p, "local_storage");
+        const remoteDir = path.join(p, "remote_storage");
+
+        const result = await list(entryDir, [localDir, remoteDir]);
+
+        expect(result.length).toBe(3);
+
+        expect(result.sort(sortDeps)).toStrictEqual([
+            {
+                name: "@other/lib",
+                version: "1.0.0",
+                distDir: path.join(remoteDir, "@other/lib-1.0.0"),
+            },
+            {
+                name: "@scope/pkg",
+                version: "1.0.0",
+                distDir: path.join(localDir, "@scope/pkg-1.0.0"),
+            },
+            {
+                name: "normal-dep",
+                version: "1.0.0",
+                distDir: path.join(localDir, "normal-dep-1.0.0"),
             },
         ].sort(sortDeps));
     });

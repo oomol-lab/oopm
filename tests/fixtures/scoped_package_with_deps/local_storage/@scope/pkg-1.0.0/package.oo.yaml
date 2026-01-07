@@ -1,0 +1,5 @@
+name: "@scope/pkg"
+version: 1.0.0
+dependencies:
+  "normal-dep": "1.0.0"
+  "@other/lib": "1.0.0"

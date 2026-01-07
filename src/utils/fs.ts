@@ -3,7 +3,6 @@ import fsP from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import * as tar from "tar";
-import { normalizePackageName } from "./misc";
 import { checkOOPackage, getDependencies } from "./npm";
 
 export async function tempDir() {
@@ -12,6 +11,7 @@ export async function tempDir() {
 
 export async function move(src: string, dest: string) {
     try {
+        await mkdir(path.dirname(dest));
         await fsP.rename(src, dest);
     }
     catch (err) {
@@ -94,7 +94,7 @@ export async function xTar(tarball: string) {
 export async function walk(name: string, version: string, searchDirs: string[], map: IDepMap) {
     let distDir = "";
     for (const searchDir of searchDirs) {
-        distDir = path.join(searchDir, `${normalizePackageName(name)}-${version}`);
+        distDir = path.join(searchDir, `${name}-${version}`);
 
         const isCorrect = await checkOOPackage(distDir);
         if (isCorrect) {

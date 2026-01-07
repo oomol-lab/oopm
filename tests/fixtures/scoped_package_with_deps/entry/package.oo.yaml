@@ -1,0 +1,4 @@
+name: test-scoped-with-deps
+version: 0.0.1
+dependencies:
+  "@scope/pkg": "1.0.0"

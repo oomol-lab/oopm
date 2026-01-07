@@ -671,16 +671,16 @@ describe.sequential("install deps", () => {
         // publish scoped packages to registry
         {
             const remoteStorage = path.join(p, "remote_storage");
-            await publish(path.join(remoteStorage, "@foo+bar-1.0.0"), ctx.registry.endpoint, "fake-token");
-            await publish(path.join(remoteStorage, "@foo+bar-2.0.0"), ctx.registry.endpoint, "fake-token");
-            await publish(path.join(remoteStorage, "@scope+other-1.0.0"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "@foo/bar-1.0.0"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "@foo/bar-2.0.0"), ctx.registry.endpoint, "fake-token");
+            await publish(path.join(remoteStorage, "@scope/other-1.0.0"), ctx.registry.endpoint, "fake-token");
         }
 
         // Copy local_storage to distDir
         const distDir = await tempDir();
         {
             const localStorage = path.join(p, "local_storage");
-            await copyDir(path.join(localStorage, "@foo+bar-1.0.0"), path.join(distDir, "@foo+bar-1.0.0"));
+            await copyDir(path.join(localStorage, "@foo/bar-1.0.0"), path.join(distDir, "@foo/bar-1.0.0"));
         }
 
         // Copy entry to workdir
@@ -726,9 +726,62 @@ describe.sequential("install deps", () => {
         });
 
         expect(new Set(fileList)).toEqual(new Set([
-            "@foo+bar-1.0.0/package.oo.yaml",
-            "@foo+bar-2.0.0/package.oo.yaml",
-            "@scope+other-1.0.0/package.oo.yaml",
+            "@foo/bar-1.0.0/package.oo.yaml",
+            "@foo/bar-2.0.0/package.oo.yaml",
+            "@scope/other-1.0.0/package.oo.yaml",
+        ]));
+    });
+
+    it("should install scoped package with scoped sub-dependencies via integrity check", async (ctx) => {
+        const p = fixture("scoped_package_with_deps");
+
+        const remoteStorage = path.join(p, "remote_storage");
+        await publish(path.join(remoteStorage, "@other/lib-1.0.0"), ctx.registry.endpoint, "fake-token");
+
+        const distDir = await tempDir();
+        {
+            const localStorage = path.join(p, "local_storage");
+            await copyDir(path.join(localStorage, "@scope/pkg-1.0.0"), path.join(distDir, "@scope/pkg-1.0.0"));
+        }
+
+        await copyDir(path.join(p, "entry"), ctx.workdir);
+
+        const result = await install({
+            all: true,
+            token: "fake-token",
+            workdir: ctx.workdir,
+            distDir,
+            registry: ctx.registry.endpoint,
+            searchDirs: [path.join(p, "local_storage")],
+        });
+
+        expect(new Set(result.primaryDepNames)).toEqual(new Set([
+            "@scope/pkg-1.0.0",
+        ]));
+
+        expect(result.deps["@scope/pkg-1.0.0"]).toEqual({
+            name: "@scope/pkg",
+            version: "1.0.0",
+            isAlreadyExist: true,
+            target: expect.any(String),
+        });
+
+        expect(result.deps["@other/lib-1.0.0"]).toEqual({
+            name: "@other/lib",
+            version: "1.0.0",
+            isAlreadyExist: false,
+            target: expect.any(String),
+        });
+
+        const fileList = await globby(`**/${ooPackageName}`, {
+            cwd: distDir,
+            onlyFiles: true,
+            absolute: false,
+        });
+
+        expect(new Set(fileList)).toEqual(new Set([
+            "@scope/pkg-1.0.0/package.oo.yaml",
+            "@other/lib-1.0.0/package.oo.yaml",
         ]));
     });
 

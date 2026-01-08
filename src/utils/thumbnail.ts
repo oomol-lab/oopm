@@ -29,7 +29,7 @@ interface BlockThumbnail {
     task?: string;
     subflow?: string;
     executorName?: string;
-    nodes?: Node[];
+    nodes?: NodeThumbnail[];
     handleOutputsFrom?: HandleOutputFrom[];
     uiData?: any;
 }
@@ -311,7 +311,7 @@ export class Thumbnail implements ThumbnailProvider {
                     icon: subflowData.icon,
                     inputHandleDefs: subflowData.pkgData.localizeHandleDefs(subflowData.data.inputs_def),
                     outputHandleDefs: subflowData.pkgData.localizeHandleDefs(subflowData.data.outputs_def),
-                    nodes: subflowData.data.nodes,
+                    nodes: await this._getNodesThumbnail(subflowData.data.nodes, subflowData),
                     handleOutputsFrom: subflowData.data.outputs_from,
                     subflow: subflowData.blockResourceName,
                     uiData: subflowData.uiData,
@@ -375,6 +375,20 @@ export class Thumbnail implements ThumbnailProvider {
             nodes,
             uiData: flowData.uiData,
         };
+    }
+
+    private async _getNodesThumbnail(rawNodes: Node[] | undefined, flowData: FlowLikeData): Promise<NodeThumbnail[]> {
+        if (!rawNodes) {
+            return [];
+        }
+        const nodes: NodeThumbnail[] = [];
+        for (const rawNode of rawNodes) {
+            const node = await this._getNodeThumbnail(rawNode, flowData);
+            if (node) {
+                nodes.push(node);
+            }
+        }
+        return nodes;
     }
 
     private async _getNodeThumbnail(raw: Node, flowData: FlowLikeData): Promise<NodeThumbnail | undefined> {
